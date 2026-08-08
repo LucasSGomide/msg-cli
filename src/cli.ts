@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
@@ -103,7 +104,12 @@ function emit(result: { code: number; out: string[]; err: string[] }): ExitCode 
 
 // Run only as a bin, never on import — otherwise a test that imports `run` also
 // executes it against the test runner's own argv.
+//
+// realpath both sides: npm installs the bin as node_modules/.bin/msg, a symlink
+// to this file. `import.meta.url` is already resolved but `process.argv[1]` is
+// the symlink, so comparing them raw is false for every installed user and the
+// CLI silently does nothing.
 const entry = process.argv[1];
-if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
+if (entry !== undefined && import.meta.url === pathToFileURL(realpathSync(entry)).href) {
   process.exitCode = await run(process.argv.slice(2));
 }

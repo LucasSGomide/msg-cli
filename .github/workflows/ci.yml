@@ -21,8 +21,10 @@ jobs:
       - run: npm ci
       - run: npm run format:check
       - run: npm run typecheck
-      - run: npm test
+      # Build first: the bin test runs dist/cli.js through a symlink, which is
+      # how npm installs it and the only way the entry-point guard is exercised.
       - run: npm run build
+      - run: npm test
       # msg-cli plans its own roadmap with its own payload, so the vendored
       # engine is exercised against a real tree on every push.
       - run: make roadmap-check
