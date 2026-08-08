@@ -896,7 +896,15 @@ export function main(argv, startDir) {
 
 // Run only as a script, never on import — a top-level side effect would make
 // every pure function above untestable.
+//
+// The filename check is not redundant. The CLI imports `parseSimpleYaml` from
+// this file so the two can never disagree about a manifest, and its bundler
+// inlines this module into its own entry point. There `import.meta.url` and
+// `argv[1]` are the same file, so the URL comparison alone is true and the
+// engine would hijack every CLI invocation. Only a file still named
+// roadmap-sync.mjs — what `msg init` vendors — is allowed to self-execute.
 const entry = process.argv[1];
-if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
+const isVendoredScript = import.meta.url.endsWith('/roadmap-sync.mjs');
+if (isVendoredScript && entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
   process.exitCode = main(process.argv.slice(2));
 }
