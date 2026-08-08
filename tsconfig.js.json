@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "checkJs": true,
+    // The hand-written JS is checked through JSDoc, and JSDoc has no non-null
+    // assertion operator. Every indexed access in these files is guarded by a
+    // length check or a literal bound a few lines above it, but there is no way
+    // to say so to the checker without turning readable code into defensive
+    // noise. src/ keeps the flag.
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["templates/scripts/**/*.mjs", "test/tools/**/*.mjs"]
+}

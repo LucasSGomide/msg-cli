@@ -1,0 +1,12 @@
+{
+  "code": 1,
+  "stdout": "  problem roadmap 01: done, but docs/tasks/01-finished/ still exists — retire it\n  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n  stale   docs/tasks/01-finished/README.md\n",
+  "stderr": "\n3 file(s) stale, 1 problem(s). Run `make roadmap-sync`.\n",
+  "tree": {
+    "docs/roadmap/01-finished.md": "# 01 — Finished\n\n**Depends on:** — · **Estimate:** 5 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n",
+    "docs/tasks/01-finished/01-only.md": "# 01 — Only slice\n\n**Roadmap:** [01](../../roadmap/01-x.md) · **Scope:** back-end · **Depends on:** —\n\n## Acceptance criteria\n\n- [x] criterion 1 (unit)\n- [x] criterion 2 (unit)\n",
+    "docs/tasks/01-finished/README.md": "# 01 — Finished\n\nTasks for this item.\n\n| # | Task | Scope | Depends on | Criteria | Status |\n|---|---|---|---|---|---|\n",
+    "docs/tasks/README.md": "# Task breakdowns\n\nA roadmap item being implemented gets a folder here: one file per shippable\nslice, each with acceptance criteria that double as its tests.\n\nA folder lives only while the item is open. Items — are `done`.\n\n_No breakdown is open. Create one with `/msg-roadmap-task-breakdown NN`._\n"
+  }
+}

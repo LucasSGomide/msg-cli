@@ -1,0 +1,13 @@
+{
+  "code": 0,
+  "stdout": "  wrote   docs/roadmap/README.md\n",
+  "stderr": "",
+  "tree": {
+    "docs/roadmap/01-foundations.md": "# 01 — Foundations\n\n**Depends on:** — · **Estimate:** 8 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/02-second.md": "# 02 — Second\n\n**Depends on:** 01 · **Estimate:** 5 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/03-third.md": "# 03 — Third\n\n**Depends on:** 02 · **Estimate:** 5 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/04-fourth.md": "# 04 — Fourth\n\n**Depends on:** — · **Estimate:** 13 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/05-parked.md": "# 05 — Parked idea\n\n**Depends on:** — · **Estimate:** 3 · **Status:** parked\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [04](04-fourth.md) | Fourth | 13 | — | not-started |\n| [02](02-second.md) | Second | 5 | 01 | not-started |\n\n## Blocked\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [03](03-third.md) | Third | 5 | 02 | not-started |\n\n## Parked\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [05](05-parked.md) | Parked idea | 3 | — | parked |\n\n## Done\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [01](01-foundations.md) | Foundations | 8 | — | done |\n"
+  }
+}

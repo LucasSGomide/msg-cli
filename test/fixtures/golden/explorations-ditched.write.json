@@ -1,0 +1,15 @@
+{
+  "code": 0,
+  "stdout": "  wrote   docs/explorations/README.md\n  wrote   docs/ditched/README.md\n",
+  "stderr": "",
+  "tree": {
+    "docs/ditched/01-old.md": "# 01 — An old idea\n\n**Ditched:** 2026-01-15\n\n## Why not\n\n- Superseded by 02.\n",
+    "docs/ditched/02-tie.md": "# 02 — A tie\n\n**Ditched:** 2026-03-01\n\n## Why not\n\n- Too costly.\n",
+    "docs/ditched/03-tie.md": "# 03 — Another tie\n\n**Ditched:** 2026-03-01\n\n## Why not\n\n- Also too costly.\n",
+    "docs/ditched/README.md": "# Ditched\n\nIdeas that were considered and rejected.\n\n| # | Idea | Ditched | Why not |\n|---|---|---|---|\n| [02](02-tie.md) | A tie | 2026-03-01 | Too costly. |\n| [03](03-tie.md) | Another tie | 2026-03-01 | Also too costly. |\n| [01](01-old.md) | An old idea | 2026-01-15 | Superseded by 02. |\n",
+    "docs/explorations/01-spike.md": "# 01 — A spike\n\n**Depends on:** — · **Estimate:** 3 · **Verdict:** viable, verified\n\n## Findings\n\n- It works.\n",
+    "docs/explorations/02-bigger.md": "# 02 — A bigger spike\n\n**Depends on:** 01 · **Estimate:** 8 · **Verdict:** blocked\n\n## Findings\n\n- Not yet.\n",
+    "docs/explorations/README.md": "# Explorations\n\nIdeas being researched rather than committed to.\n\n| # | Idea | Est | Depends on | Verdict |\n|---|---|---|---|---|\n| [02](02-bigger.md) | A bigger spike | 8 | 01 | blocked |\n| [01](01-spike.md) | A spike | 3 | — | viable, verified |\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "  wrote   docs/roadmap/README.md\n",
+  "stderr": "",
+  "tree": {
+    "docs/roadmap/01-windows.md": "# 01 — Written on Windows\r\n\r\n**Depends on:** — · **Estimate:** 5 · **Status:** not-started\r\n\r\n## Context\r\n\r\n- Line endings.\r\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [01](01-windows.md) | Written on Windows | 5 | — | not-started |\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n"
+  }
+}

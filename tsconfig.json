@@ -13,18 +13,16 @@
     "verbatimModuleSyntax": true,
 
     "allowJs": true,
-    "checkJs": true,
+    // The hand-written JS (the vendored engine, the parity harness) is checked
+    // by tsconfig.js.json instead. Without this the engine gets pulled into
+    // this project transitively through a test import and re-checked under
+    // flags it was never written against.
+    "checkJs": false,
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "test/**/*.mjs",
-    "templates/scripts/**/*.mjs",
-    "*.config.ts"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts", "*.config.ts"]
 }

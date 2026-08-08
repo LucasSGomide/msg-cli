@@ -1,0 +1,10 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "error: 01-first.md: number 01 is already taken by 01-clash.md\n",
+  "tree": {
+    "docs/roadmap/01-clash.md": "# 01 — Clash\n\n**Depends on:** — · **Estimate:** 1 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/01-first.md": "# 01 — First\n\n**Depends on:** — · **Estimate:** 1 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n"
+  }
+}
