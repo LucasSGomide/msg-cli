@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { SKILLS, SKILLS_DIR } from '../../src/core/templates';
+import { ENGINE_SRC, SKILLS, SKILLS_DIR } from '../../src/core/templates';
 
 const REPO = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -59,5 +59,13 @@ describe("this repo's own skill copies", () => {
     const live = join(REPO, '.claude', 'skills', skill, 'SKILL.md');
     expect(existsSync(live), `${live} is missing`).toBe(true);
     expect(readFileSync(live, 'utf8')).toBe(skillText(skill));
+  });
+
+  // msg-cli ran its own init, so it vendors the engine like any other project.
+  // That copy is real and can go stale exactly the same way.
+  it('vendors the same engine it ships', () => {
+    const vendored = join(REPO, 'scripts', 'roadmap-sync.mjs');
+    expect(existsSync(vendored), `${vendored} is missing — re-run \`msg init\``).toBe(true);
+    expect(readFileSync(vendored, 'utf8')).toBe(readFileSync(ENGINE_SRC, 'utf8'));
   });
 });

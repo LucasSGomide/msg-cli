@@ -44,6 +44,24 @@ Run it with `--shape` or `--areas` to skip the prompts entirely.
 The engine is the only thing that writes tables; humans and skills write prose and
 tick checkboxes. That split is what keeps the derived state real.
 
+Rule docs start empty by default. A rule gets written the first time a decision
+repeats — not up front. Pass `--seed` to start from an opinionated default
+standard instead; those docs are a copy the project then owns outright, with
+nothing reconciling them upstream later.
+
+## If your project uses a formatter
+
+The engine writes the tables under `docs/` and then checks them for drift. A
+formatter rewrapping one is indistinguishable from a stale table, so
+`make roadmap-check` fails. Exclude the four planning folders:
+
+```
+docs/roadmap/
+docs/tasks/
+docs/explorations/
+docs/ditched/
+```
+
 ## Development
 
 ```sh

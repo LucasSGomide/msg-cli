@@ -6,6 +6,18 @@ templates/
 # by a test. Formatting one side and not the other would break that.
 .claude/
 
+# The engine this repo vendored into itself by running its own init. Same
+# byte-equality reason as .claude/.
+scripts/
+
+# The engine writes these tables and then checks them for drift. A formatter
+# rewrapping one is indistinguishable from a stale table, so roadmap-check
+# fails. Any project using both prettier and msg-roadmap needs these four lines.
+docs/roadmap/
+docs/tasks/
+docs/explorations/
+docs/ditched/
+
 # Golden output trees are compared byte-for-byte against engine output.
 test/fixtures/
 

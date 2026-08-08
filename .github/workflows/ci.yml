@@ -23,6 +23,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # msg-cli plans its own roadmap with its own payload, so the vendored
+      # engine is exercised against a real tree on every push.
+      - run: make roadmap-check
       # A wrong `files:` field is the classic first-publish bug and it fails
       # silently. The pack test asserts the payload is actually in the tarball.
       - run: npm pack --dry-run
