@@ -1,0 +1,9 @@
+# The payload ships byte-identical to what lands in a user's repo. Formatting it
+# here would silently rewrite other people's docs and skills.
+templates/
+
+# Golden output trees are compared byte-for-byte against engine output.
+test/fixtures/
+
+dist/
+node_modules/
