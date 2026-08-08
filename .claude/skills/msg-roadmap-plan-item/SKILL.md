@@ -7,9 +7,10 @@ description: Grill an idea into a roadmap item, an exploration, or a ditched rec
 
 The planning is the deliverable. The doc is a receipt — keep it short.
 
-**Read `project.yml` first.** It names the folders, the areas and their rule docs,
-and the sync command. Everything below that says "the roadmap folder" means the
-path it gives. If there is no `project.yml`, stop and point at `/msg-setup`.
+**Read `project.yml` first.** It names the folders and the areas with their rule
+docs. Everything below that says "the roadmap folder" means the path it gives. If
+there is no `project.yml`, stop and tell the user to run
+`npx @lucas-gomide/msg-cli init`.
 
 ## How to talk
 
@@ -41,7 +42,9 @@ compress.
 4. **User experience grill**, only when the item touches the front end. See below.
 5. **Ask the outcome**, with a recommendation: **roadmap** · **exploration** ·
    **ditch**.
-6. **Write** per the template below, then run the sync command.
+6. **Write** per the template below, then run `make roadmap-sync`.
+7. **Check it is ready to break down** against the bar below. If it is not, fix
+   the doc now — a thin item becomes a thin breakdown.
 
 Read only what the grill actually touches. `grep` the metadata headers to learn
 the number space and dependency graph; open full docs on demand. Open an area's
@@ -69,10 +72,15 @@ Filename is `NN-kebab-slug.md`.
 - **Entry** — …
 - **Flow** — …
 
-## Technical Details:
+## Key Areas:
 
 - **Back-end** — …
 - **Front-end** — …
+
+## Technical Details:
+
+1. …
+2. …
 
 ### Technical References:
 
@@ -89,23 +97,58 @@ Caps, enforced:
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Context                     | 2000 chars total                                                                                                 |
 | User Experience             | 8 bullets                                                                                                        |
-| Technical Details           | 10 bullets                                                                                                       |
+| Key Areas                   | 6 bullets                                                                                                        |
+| Technical Details           | 12 numbered steps                                                                                                |
 | Technical References        | 15 bullets                                                                                                       |
 | Blockers                    | no cap — but every bullet must cite a concrete repo reference (file, table, field, doc number) that justifies it |
 | Findings (exploration only) | 1000 chars                                                                                                       |
 
 Bullets only, no prose paragraphs. Every bullet is a decision or a fact; anything
-that is neither gets cut. Prefix Technical Details bullets with the area in bold
-— **the legal set is exactly the keys under `areas` in `project.yml`**. A bullet
-prefixed with anything else is a bullet pointing at no rules.
+that is neither gets cut.
+
+## Key Areas vs Technical Details
+
+They answer different questions, and collapsing them is what makes an item too
+vague to slice.
+
+**Key Areas — which rule docs this item has to obey.** Each bullet is prefixed
+with an area in bold, and **the legal set is exactly the keys under `areas` in
+`project.yml`**. A bullet prefixed with anything else points at no rules. Say
+what the item does in that area and which rule constrains it:
+
+```markdown
+## Key Areas:
+
+- **Back-end** — new read endpoint for the character list; DAO, not a repository
+- **Front-end** — one new page, no new shared primitive
+- **Design** — reuses the table pattern, rule 24
+```
+
+**Technical Details — the order the work happens in.** Numbered steps, free-form,
+no area prefix. This is where the implementation flow is decided once so it does
+not have to be re-derived later with less context:
+
+```markdown
+## Technical Details:
+
+1. Add the endpoint and its response schema; regenerate the contract.
+2. Run codegen so the client and mock handlers exist.
+3. Tests for the API call first — they fail against the generated mock.
+4. Tests for the page's empty, loading and error states.
+5. Build the page from props.
+6. Wire the call in through a feature hook.
+```
+
+A step names a concrete action on a concrete thing. "Handle errors" is not a
+step; "map the 409 to the duplicate-name message on the form" is.
 
 ## The User Experience section
 
-**Mandatory when Technical Details carries a `**Front-end**` bullet. Omitted
-entirely otherwise** — an API-only item does not get an empty heading.
+**Mandatory when Key Areas carries a `**Front-end**` bullet. Omitted entirely
+otherwise** — an API-only item does not get an empty heading.
 
-It sits above Technical Details on purpose: what the user does, before how it is
-built.
+It sits above Key Areas on purpose: what the user does, before which rules
+constrain it and in what order it gets built.
 
 Bullet prefixes, in this order:
 
@@ -170,7 +213,7 @@ position and no screen.
 
 ## README regeneration
 
-**Run the sync command from `project.yml`.** Never hand-patch a table — every one
+**Run `make roadmap-sync`.** Never hand-patch a table — every one
 of them is derived from the docs' metadata headers, and a hand-edited row is
 drift the check will fail on.
 
@@ -192,3 +235,22 @@ If a ditched idea is picked up again and the user proceeds, **delete the ditched
 doc** once the roadmap or exploration doc is written, then sync — the row goes
 with it. Do not leave a pointer behind and do not renumber the remaining ditched
 docs.
+
+## Ready to break down
+
+`/msg-roadmap-task-breakdown` refuses an item that does not meet this bar, and
+names the gap. Check it yourself before you finish, so the refusal never happens.
+
+1. **Every User Experience behaviour is traceable to a step.** If a state, a flow
+   step or an entry point has nothing in Technical Details that produces it, the
+   breakdown will not produce it either.
+2. **Every step names a concrete action on a concrete thing.** A step nobody can
+   turn into a commit is a heading, not a step.
+3. **Every Key Areas bullet cites its rule doc's area**, and any `**Pattern**`
+   bullet cites a numbered rule.
+4. **Blockers are real unknowns, each with a repo reference.** A dependency is not
+   a blocker; the header already carries it.
+5. **The estimate is a number.** `make roadmap-check` fails otherwise.
+
+An item that fails 1 or 2 is not "needs more detail during breakdown" — it is not
+planned yet. Go back to the grill.

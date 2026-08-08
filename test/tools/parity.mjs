@@ -5,7 +5,8 @@
  * This is a porting-time tool, not a CI gate: it needs python3 and the original
  * `roadmap_sync.py`, which a later commit deletes. Recover it from history:
  *
- *     git show <rev>:.claude/skills/msg-roadmap-sync/scripts/roadmap_sync.py > /tmp/roadmap_sync.py
+ *     REV=$(git log --diff-filter=D --format=%H -1 -- '*roadmap_sync.py')^
+ *     git show "$REV:.claude/skills/msg-roadmap-sync/scripts/roadmap_sync.py" > /tmp/roadmap_sync.py
  *     node test/tools/parity.mjs --python /tmp/roadmap_sync.py
  *
  * Every difference is either a bug in the port or a deliberate divergence that

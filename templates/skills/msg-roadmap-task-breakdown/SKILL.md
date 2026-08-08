@@ -12,13 +12,35 @@ session finishes it without compaction. One task, one commit.
 The task file is the whole brief. An agent implementing it should never need to
 open the roadmap doc.
 
-**Read `project.yml` first** for the folders, the area vocabulary and the sync
-command. No `project.yml` means stop and point at `/msg-setup`.
+**Read `project.yml` first** for the folders and the area vocabulary. No
+`project.yml` means stop and tell the user to run
+`npx @lucas-gomide/msg-cli init`.
 
 Invocation: `/msg-roadmap-task-breakdown 03`. Bare, ask which item.
 
 **This skill writes plans, never status.** Statuses, tables and ordering are
 derived — see `/msg-roadmap-sync`, the only thing that writes them.
+
+## Is the item ready?
+
+The item is the whole input. These are the same five tests
+`/msg-roadmap-plan-item` applies before it finishes, checked here because a thin
+item is invisible once it has been sliced.
+
+1. **Every User Experience behaviour is traceable to a Technical Details step.**
+2. **Every step names a concrete action on a concrete thing.**
+3. **Every Key Areas bullet uses a key from `areas` in `project.yml`**, and any
+   `**Pattern**` bullet cites a numbered design rule.
+4. **Blockers are real unknowns, each with a repo reference.**
+5. **The estimate is a number.**
+
+Failing 3, 4 or 5 is a fix you can offer to make on the roadmap doc and carry on.
+Failing 1 or 2 means the item is not planned yet: point at
+`/msg-roadmap-plan-item` and stop.
+
+An older item written before Key Areas existed carries a flat `## Technical
+Details:` list of area-prefixed bullets. Read those as Key Areas, and treat the
+missing implementation flow as a failure of test 2.
 
 ## Flow
 
@@ -27,14 +49,19 @@ derived — see `/msg-roadmap-sync`, the only thing that writes them.
    redo the breakdown. Never overwrite a task file — ticked checkboxes are the
    only state under the docs tree that cannot be reconstructed.
 2. **Read the roadmap doc.** Only that doc. Do not preload the area rule docs.
-3. **Check dependencies.** If a dependency is not `done`, say so once and
+3. **Check it is ready to break down.** See the bar above. If it fails, say which
+   test it failed and what is missing, and stop. Do not invent the missing detail
+   — an item too vague to slice produces tasks too vague to implement, and the
+   vagueness then looks decided.
+4. **Check dependencies.** If a dependency is not `done`, say so once and
    continue — not a gate.
-4. **Backfill a missing User Experience section.** If the item has a
-   `**Front-end**` bullet and no `## User Experience:` section, it was planned
-   before the section existed. Grill briefly for it — Entry, Flow, States,
+5. **Backfill a missing User Experience section.** If the item has a
+   `**Front-end**` bullet in Key Areas and no `## User Experience:` section, it
+   was planned before the section existed. Grill briefly for it — Entry, Flow,
+   States,
    Pattern — and **write it onto the roadmap doc** before slicing. Two or three
    questions, not a design review.
-5. **Propose the slice list and stop.** Table only, no files written:
+6. **Propose the slice list and stop.** Table only, no files written:
 
    ```
    Proposed breakdown of roadmap 01 (5 tasks):

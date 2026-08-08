@@ -9,20 +9,23 @@ The roadmap README is the source of truth for what to pick up next. It is only
 true if it was regenerated after the last change — so this skill runs after any
 change under the docs tree.
 
-**`scripts/roadmap_sync.py` does the computing. Do not do it by hand.** Counting
+**`scripts/roadmap-sync.mjs` does the computing. Do not do it by hand.** Counting
 checkboxes, deriving statuses, sorting sections and rewriting five kinds of table
 are deterministic. Your job is the three things the script deliberately refuses to
 do: tick a checkbox, write `## As built`, and update the hand-written prose.
 
-**Read `project.yml` first** — it names the folders and the sync command. No
-`project.yml` means stop and point at `/msg-setup`.
+**Read `project.yml` first** — it names the folders. No `project.yml` means stop
+and tell the user to run `npx @lucas-gomide/msg-cli init`.
 
 ```
 make roadmap-sync     # write
 make roadmap-check    # verify freshness — put it in whatever gate the project runs
 ```
 
-Use the commands `project.yml` names; the two above are what `/msg-setup` writes.
+Those two targets are what `msg init` writes, and they are not configurable —
+the engine is vendored per project, so there is nothing for a manifest entry to
+vary. `roadmap-check` also fails on a path in `project.yml` that points at
+nothing, which is why there is no separate project-check target.
 
 ## What the script derives
 
@@ -42,7 +45,7 @@ decision, not a count.
 
 ## Flow
 
-1. **Run the sync command.** Read its output — every line is `status`, `wrote`,
+1. **Run `make roadmap-sync`.** Read its output — every line is `status`, `wrote`,
    `problem` or `retire`.
 2. **Handle each `problem` line.** They are real inconsistencies, not noise:
    - _depends on NN, which does not exist_ — a typo or a retired number. Fix the
@@ -77,8 +80,8 @@ keeping moves onto the roadmap doc.
 
 1. Read the task files. Add or extend `## As built` on the roadmap doc, **above
    `## Blockers:`** when one exists. Bullets only.
-2. Delete the task folder, using the project's VCS as `project.yml` declares it —
-   `git rm -r` under `vcs: git`, the equivalent under any other.
+2. Delete the task folder, using whatever version-control command the project
+   uses. The skills do not assume one.
 3. Re-run the sync — the tables and the "Items … are `done`" line fix themselves.
 
 **`## As built` is what the breakdown learned that the plan did not** — a decision

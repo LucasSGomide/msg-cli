@@ -51,9 +51,12 @@ rewrite an existing `Depends on`.
 The parent is not read again at implementation time, so anything dropped in the
 breakdown is lost.
 
-- Walk every parent **Technical Details** bullet. Each must appear in at least one
-  task's Technical details, verbatim or narrowed to that slice. A bullet in no
-  task is a gap.
+- Walk every parent **Technical Details** step. Each must appear in at least one
+  task's Technical details, verbatim or narrowed to that slice. A step in no task
+  is a gap, and steps landing out of order across tasks is a gap too — the parent
+  decided that order for a reason.
+- Walk every parent **Key Areas** bullet. Each names a rule doc some task must
+  obey; an area no task carries in its Scope is a gap.
 - Same for **Technical References** — each must be cited by the task it bears on.
 - A bullet reworded into something weaker or ambiguous is a gap; restore the
   parent's wording.

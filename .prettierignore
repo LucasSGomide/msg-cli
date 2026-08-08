@@ -2,6 +2,10 @@
 # here would silently rewrite other people's docs and skills.
 templates/
 
+# This repo's live copy of the skills, asserted byte-equal to templates/skills/
+# by a test. Formatting one side and not the other would break that.
+.claude/
+
 # Golden output trees are compared byte-for-byte against engine output.
 test/fixtures/
 
