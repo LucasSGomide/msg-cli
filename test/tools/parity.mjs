@@ -80,10 +80,13 @@ function runEngine(fixture, which, args) {
   // manifest path check and manufacture a difference.
   mkdirSync(join(dir, '.git'), { recursive: true });
 
+  // Keep the real filename. The JS engine only self-executes when it is still
+  // called roadmap-sync.mjs — that guard is what stops it hijacking the CLI that
+  // bundles it — so renaming it here would silently run nothing.
   const scripts = join(dir, 'scripts');
-  cpSync(which === 'py' ? PY_ENGINE : JS_ENGINE, join(scripts, 'engine'), { recursive: false });
-
-  const target = join(scripts, 'engine');
+  mkdirSync(scripts, { recursive: true });
+  const target = join(scripts, which === 'py' ? 'roadmap_sync.py' : 'roadmap-sync.mjs');
+  cpSync(which === 'py' ? PY_ENGINE : JS_ENGINE, target, { recursive: false });
   const result =
     which === 'py'
       ? spawnSync('python3', [target, ...args], { encoding: 'utf8' })

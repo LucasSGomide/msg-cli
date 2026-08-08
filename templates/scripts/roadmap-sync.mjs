@@ -746,7 +746,12 @@ export function tasksReadme(cfg, items, current) {
     i.status,
   ]);
 
-  const done = compressNumbers(byNumber.filter((i) => i.status === 'done').map((i) => i.number));
+  // An em dash for "none", the same convention the tables use. Without it an
+  // empty list renders `Items  are \`done\`` — a double space in every freshly
+  // scaffolded project, and the reason the seeded README would fail its own
+  // first `make roadmap-check`.
+  const done =
+    compressNumbers(byNumber.filter((i) => i.status === 'done').map((i) => i.number)) || DASH;
   // No /g: first occurrence only. Function replacement keeps `$` in `done` literal.
   const text = current.replace(
     /Items [^\n]*(?:\n(?!\n)[^\n]*)* are `done`/,

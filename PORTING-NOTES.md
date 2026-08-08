@@ -10,8 +10,8 @@ git show <rev>:.claude/skills/msg-roadmap-sync/scripts/roadmap_sync.py > /tmp/ro
 node test/tools/parity.mjs --python /tmp/roadmap_sync.py
 ```
 
-**24 of 26 runs were byte-identical.** The two that differed are listed below and
-are deliberate. CI does not run this harness — it diffs the JS engine against the
+**Every difference is accounted for below and deliberate**; the last full run
+left 9 differing runs out of 26, 7 of them the same em-dash change. CI does not run this harness — it diffs the JS engine against the
 golden trees in `test/fixtures/golden/`, which were generated once the parity run
 was clean, so CI needs no Python and the engine cannot regress silently.
 
@@ -32,20 +32,33 @@ returning `NaN` leaves the order unspecified, so the guard is an explicit
 
 Same fix in `explorations_readme`'s row sort, which had the identical latent bug.
 
-### 2. A missing roadmap README exits 2 instead of a traceback
+### 2. An empty done-list renders an em dash
+
+`tasks_readme` (py l.490) substituted `compress_numbers(...)` straight into
+``Items {done} are `done` ``. With nothing done yet that expands to
+``Items  are `done` `` — a double space, and it is the state **every freshly
+scaffolded project starts in**, so `msg init` immediately followed by
+`make roadmap-check` reported the seeded README as stale.
+
+The port falls back to `—`, the same "none" convention the tables already use.
+The seeded template matches it exactly, so a new project passes its own check
+with no sync run first. Accounts for 7 of the 9 remaining parity diffs; all of
+them are fixtures with no `done` item.
+
+### 3. A missing roadmap README exits 2 instead of a traceback
 
 `run` (py l.533) called `readme.read_text()` outside any guard, so a project
 whose `docs/roadmap/README.md` was deleted got a `FileNotFoundError` traceback.
 The port raises a `DocError` naming the file, which prints `error: …` and exits 2
 like every other structural failure.
 
-### 3. Unicode digits are no longer accepted as numbers
+### 4. Unicode digits are no longer accepted as numbers
 
 Python's `str.isdigit()` is true for `²` and for Arabic-Indic digits, so
 `**Estimate:** ٥` passed validation and then behaved unpredictably. The port uses
 `/^[0-9]+$/`, which is stricter and matches what the docs actually mean.
 
-### 4. The "run this first" message names the CLI
+### 5. The "run this first" message names the CLI
 
 `error: docs/roadmap/ does not exist — run /msg-setup first` became
 ``run `npx @lucas-gomide/msg-cli init` first``. The skill can no longer scaffold

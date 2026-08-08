@@ -5,4 +5,3 @@ from scratch. Every entry says why in terms of a concrete repo reference.
 
 | # | Idea | Ditched | Why not |
 |---|---|---|---|
-| _(none yet)_ | | | |

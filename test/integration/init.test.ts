@@ -293,6 +293,14 @@ describe('add-area', () => {
 });
 
 describe('the area registry', () => {
+  // Without this, `init --seed` for a shape covering that area crashes at
+  // runtime with ENOENT instead of failing here.
+  it('has a seed file on disk for every area', () => {
+    for (const [slug, area] of Object.entries(AREAS)) {
+      expect(() => readDocTemplate(area.seed), `${slug} seed ${area.seed}`).not.toThrow();
+    }
+  });
+
   it('maps every area to a distinct doc', () => {
     const docs = Object.values(AREAS).map((a) => a.doc);
     expect(new Set(docs).size).toBe(docs.length);
