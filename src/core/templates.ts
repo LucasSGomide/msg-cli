@@ -30,7 +30,7 @@ export const DOCS_DIR = join(TEMPLATES, 'docs');
 export const PROJECT_DIR = join(TEMPLATES, 'project');
 export const ENGINE_SRC = join(TEMPLATES, 'scripts', 'roadmap-sync.mjs');
 
-/** The skills a scaffolded project gets. grill-me is here because
+/** The skills a scaffolded project gets. msg-grill-me is here because
  * msg-roadmap-plan-item invokes it directly — without it the pipeline breaks on
  * a fresh machine. */
 export const SKILLS = [
@@ -39,7 +39,7 @@ export const SKILLS = [
   'msg-roadmap-task-breakdown',
   'msg-roadmap-task-review',
   'msg-roadmap-sync',
-  'grill-me',
+  'msg-grill-me',
 ] as const;
 
 export function readProjectTemplate(name: string): string {

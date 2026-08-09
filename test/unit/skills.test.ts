@@ -55,7 +55,7 @@ describe("this repo's own skill copies", () => {
   // .claude/skills/ is the live copy used while developing msg-cli itself.
   // templates/skills/ is what ships. Two copies of the same prose drift the
   // moment one is edited alone, and nothing else would notice.
-  it.each(SKILLS.filter((s) => s !== 'grill-me'))('%s matches the template', (skill) => {
+  it.each(SKILLS)('%s matches the template', (skill) => {
     const live = join(REPO, '.claude', 'skills', skill, 'SKILL.md');
     expect(existsSync(live), `${live} is missing`).toBe(true);
     expect(readFileSync(live, 'utf8')).toBe(skillText(skill));

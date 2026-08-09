@@ -58,7 +58,7 @@ describe.runIf(existsSync(BIN))('the built bin, invoked through a symlink', () =
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('created project.yml');
     expect(existsSync(join(root, 'scripts', 'roadmap-sync.mjs'))).toBe(true);
-    expect(existsSync(join(root, '.claude', 'skills', 'grill-me', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, '.claude', 'skills', 'msg-grill-me', 'SKILL.md'))).toBe(true);
   });
 
   it('leaves a scaffolded project passing its own check', () => {

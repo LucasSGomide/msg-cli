@@ -36,7 +36,9 @@ compress.
 2. **Ditched check.** Read the ditched and explorations READMEs (tables only). If
    the idea matches a ditched doc or a `ruled out` verdict, open that doc, state
    the reason, and ask whether to proceed anyway. Stop if the answer is no.
-3. **Grill.** Invoke the `grill-me` skill. One question at a time, each with a
+3. **Grill.** Invoke the `msg-grill-me` skill at `med` effort and verbosity
+   unless the user's own words already imply a level — relay their words rather
+   than picking a level yourself. One question at a time, each with a
    recommended answer. Explore the repo instead of asking anything the repo can
    answer. Nothing is a hard gate — surface conflicts and let the user decide.
 4. **User experience grill**, only when the item touches the front end. See below.

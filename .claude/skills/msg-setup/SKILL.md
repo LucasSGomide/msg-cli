@@ -30,7 +30,7 @@ docs/<area>.md                     one rule doc per area
 scripts/roadmap-sync.mjs           the engine, vendored
 Makefile                           roadmap-sync and roadmap-check targets
 CLAUDE.md                          a delimited msg-roadmap block
-.claude/skills/                    these skills, plus grill-me
+.claude/skills/                    these skills
 ```
 
 Every write is skipped when the target exists, so re-running fills only gaps and

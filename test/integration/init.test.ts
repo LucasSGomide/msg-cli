@@ -69,7 +69,7 @@ describe('init', () => {
 
     expect(result.code).toBe(0);
     expect(listFiles(root)).toEqual([
-      '.claude/skills/grill-me/SKILL.md',
+      '.claude/skills/msg-grill-me/SKILL.md',
       '.claude/skills/msg-roadmap-plan-item/SKILL.md',
       '.claude/skills/msg-roadmap-sync/SKILL.md',
       '.claude/skills/msg-roadmap-task-breakdown/SKILL.md',

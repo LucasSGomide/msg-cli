@@ -12,7 +12,7 @@ npx @lucas-gomide/msg-cli init
 
 | Path                                                               | What it is                                                                  |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `.claude/skills/`                                                  | The `msg-*` planning skills plus `grill-me`                                 |
+| `.claude/skills/`                                                  | The `msg-*` planning skills                                                 |
 | `project.yml`                                                      | The manifest every skill reads — folders and the area→doc map               |
 | `docs/roadmap/` `docs/tasks/` `docs/explorations/` `docs/ditched/` | The planning tree                                                           |
 | `docs/<area>.md`                                                   | One rule doc per area, empty by default or seeded with opinionated defaults |
