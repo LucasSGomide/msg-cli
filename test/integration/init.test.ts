@@ -79,6 +79,7 @@ describe('init', () => {
       'Makefile',
       'docs/architecture-api.md',
       'docs/architecture-web.md',
+      'docs/auth.md',
       'docs/design.md',
       'docs/ditched/README.md',
       'docs/explorations/README.md',
@@ -191,6 +192,65 @@ describe('init', () => {
     expect(result.out.join('\n')).toContain('warning a project.yml already exists');
   });
 
+  it('leaves the auth doc out with --no-auth, and nothing else', async () => {
+    const withAuth = project();
+    const without = project();
+
+    await init({ root: withAuth, shape: 'api', seed: true }, VERSION);
+    const result = await init({ root: without, shape: 'api', auth: false, seed: true }, VERSION);
+
+    expect(listFiles(withAuth)).toContain('docs/auth.md');
+    expect(listFiles(without)).toEqual(listFiles(withAuth).filter((f) => f !== 'docs/auth.md'));
+    expect(readFileSync(join(without, 'project.yml'), 'utf8')).not.toContain('Auth:');
+    expect(result.out.join('\n')).toContain('auth    not included');
+  });
+
+  it('includes auth by default for a shape that can have one', async () => {
+    const root = project();
+    const result = await init({ root, shape: 'web', seed: false }, VERSION);
+
+    expect(listFiles(root)).toContain('docs/auth.md');
+    expect(readFileSync(join(root, 'project.yml'), 'utf8')).toContain('  Auth: docs/auth.md');
+    expect(result.out.join('\n')).toContain('auth    included');
+  });
+
+  it('says nothing about auth for docs-only', async () => {
+    const root = project();
+    const result = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    expect(listFiles(root)).not.toContain('docs/auth.md');
+    expect(result.out.join('\n')).not.toContain('auth ');
+  });
+
+  it('keeps the seeded stack docs free of auth when it is declined', async () => {
+    const root = project();
+    await init({ root, shape: 'both', auth: false, seed: true }, VERSION);
+
+    for (const doc of [
+      'stack-api.md',
+      'stack-web.md',
+      'architecture-api.md',
+      'architecture-web.md',
+    ]) {
+      const text = readFileSync(join(root, 'docs', doc), 'utf8');
+      expect(text, doc).not.toMatch(/Better Auth|use-session|auth-client|getSession/);
+    }
+  });
+
+  it('rejects --auth alongside --areas, which already says it', async () => {
+    const root = project();
+    await expect(init({ root, areas: 'design,naming', auth: true }, VERSION)).rejects.toThrow(
+      /cannot be combined with --areas/,
+    );
+  });
+
+  it('rejects an auth flag for docs-only', async () => {
+    const root = project();
+    await expect(init({ root, shape: 'docs-only', auth: false }, VERSION)).rejects.toThrow(
+      /means nothing for --shape docs-only/,
+    );
+  });
+
   it('rejects an unknown shape', async () => {
     const root = project();
     await expect(init({ root, shape: 'mobile', seed: false }, VERSION)).rejects.toThrow(
@@ -278,6 +338,17 @@ describe('add-area', () => {
     await init({ root, shape: 'web', seed: false }, VERSION);
     addArea('back-end', { root });
 
+    expect(check(root).code).toBe(0);
+  });
+
+  it('adds auth to a project that started without it', async () => {
+    const root = project();
+    await init({ root, shape: 'api', auth: false, seed: false }, VERSION);
+
+    const result = addArea('auth', { root });
+
+    expect(result.code).toBe(0);
+    expect(readFileSync(join(root, 'project.yml'), 'utf8')).toContain('  Auth: docs/auth.md');
     expect(check(root).code).toBe(0);
   });
 

@@ -16,6 +16,8 @@ export type ExitCode = 0 | 1 | 2;
 const OPTIONS = {
   shape: { type: 'string' },
   areas: { type: 'string' },
+  auth: { type: 'boolean' },
+  'no-auth': { type: 'boolean' },
   seed: { type: 'boolean' },
   'no-seed': { type: 'boolean' },
   root: { type: 'string' },
@@ -48,12 +50,18 @@ export async function run(argv: string[]): Promise<ExitCode> {
     }
     const seed = values.seed ? true : values['no-seed'] ? false : undefined;
 
+    if (values.auth && values['no-auth']) {
+      throw new UsageError('--auth and --no-auth contradict each other');
+    }
+    const auth = values.auth ? true : values['no-auth'] ? false : undefined;
+
     switch (command) {
       case 'init': {
         const result = await init(
           {
             shape: values.shape,
             areas: values.areas,
+            auth,
             seed,
             root: values.root,
             yes: values.yes,

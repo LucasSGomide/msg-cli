@@ -33,6 +33,11 @@ export const AREAS = {
     doc: 'docs/stack-web.md',
     seed: 'stack-web.md',
   },
+  auth: {
+    label: 'Auth',
+    doc: 'docs/auth.md',
+    seed: 'auth.md',
+  },
   design: {
     label: 'Design',
     doc: 'docs/design.md',

@@ -6,7 +6,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { AREA_SLUGS, parseAreas, UsageError } from '../../src/core/areas';
 import { addAreaLine, renderManifest } from '../../src/core/manifest';
-import { areasForShape, detectShape, SHAPE_NAMES, SHAPES } from '../../src/core/shapes';
+import {
+  areasForShape,
+  detectShape,
+  SHAPE_NAMES,
+  SHAPES,
+  supportsAuth,
+} from '../../src/core/shapes';
 
 const dirs: string[] = [];
 
@@ -54,6 +60,26 @@ describe('shapes', () => {
 
   it('keeps docs-only to the two stack-neutral areas', () => {
     expect(areasForShape('docs-only')).toEqual(['design', 'naming']);
+  });
+
+  it('includes auth by default for every shape that can have it', () => {
+    for (const shape of SHAPE_NAMES) {
+      if (!supportsAuth(shape)) continue;
+      expect(areasForShape(shape), shape).toContain('auth');
+    }
+  });
+
+  it('drops only auth when auth is declined', () => {
+    for (const shape of SHAPE_NAMES) {
+      const kept = areasForShape(shape, false);
+      expect(kept, shape).not.toContain('auth');
+      expect(kept, shape).toEqual(areasForShape(shape).filter((slug) => slug !== 'auth'));
+    }
+  });
+
+  it('never offers auth for docs-only — there is nothing to sign in to', () => {
+    expect(supportsAuth('docs-only')).toBe(false);
+    expect(areasForShape('docs-only', true)).toEqual(['design', 'naming']);
   });
 });
 

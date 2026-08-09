@@ -8,8 +8,8 @@ import { AREA_SLUGS, type AreaSlug } from './areas';
  * derived from it, so `init` asks one question instead of six checkboxes.
  */
 export const SHAPES = {
-  api: ['back-end', 'api-stack', 'naming'],
-  web: ['front-end', 'web-stack', 'design', 'naming'],
+  api: ['back-end', 'api-stack', 'auth', 'naming'],
+  web: ['front-end', 'web-stack', 'auth', 'design', 'naming'],
   both: AREA_SLUGS,
   'docs-only': ['design', 'naming'],
 } as const satisfies Record<string, readonly AreaSlug[]>;
@@ -22,8 +22,27 @@ export function isShape(value: string): value is Shape {
   return Object.hasOwn(SHAPES, value);
 }
 
-export function areasForShape(shape: Shape): AreaSlug[] {
-  return [...SHAPES[shape]];
+/**
+ * Plenty of projects have no sign-in at all, so auth is a question rather than a
+ * given — but only where it could mean something. A docs-only project has no
+ * runtime to put a session in, and asking would be noise.
+ */
+export function supportsAuth(shape: Shape): boolean {
+  return slugsOf(shape).includes('auth');
+}
+
+/**
+ * Auth sits in the shape lists at its natural position and is filtered back out,
+ * so declining it never reorders the areas a project does keep — the manifest
+ * of an api project without auth is the api list minus one line.
+ */
+export function areasForShape(shape: Shape, auth = true): AreaSlug[] {
+  return slugsOf(shape).filter((slug) => auth || slug !== 'auth');
+}
+
+/** The tuples are readonly literal types; widen once so they can be iterated. */
+function slugsOf(shape: Shape): readonly AreaSlug[] {
+  return SHAPES[shape];
 }
 
 /**

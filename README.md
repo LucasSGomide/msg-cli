@@ -24,13 +24,19 @@ Nothing is ever overwritten. Re-running `init` fills only the gaps.
 ## Commands
 
 ```sh
-msg init [--shape api|web|both|docs-only] [--areas a,b] [--seed|--no-seed] [--root .] [-y]
+msg init [--shape api|web|both|docs-only] [--areas a,b] [--auth|--no-auth] [--seed|--no-seed] [--root .] [-y]
 msg check [--root .]
 msg add-area <slug> [--seed] [--root .]
 ```
 
 `init` detects the project shape from its layout and offers that as the default.
 Run it with `--shape` or `--areas` to skip the prompts entirely.
+
+Not every project has something to sign in to, so **auth is a question, not a
+given**: `init` asks whether the project needs it (for any shape but
+`docs-only`), and answering no leaves out the `auth` area entirely — no sessions,
+guards or sign-in in the seeded docs. `--no-auth` answers it up front; the
+default is to include it. Add it later with `msg add-area auth`.
 
 ## The workflow
 

@@ -73,6 +73,7 @@ areas:
   Front-end: docs/architecture-web.md
   API stack: docs/stack-api.md
   Web stack: docs/stack-web.md
+  Auth: docs/auth.md
   Design: docs/design.md
   Naming: docs/naming.md
 ```

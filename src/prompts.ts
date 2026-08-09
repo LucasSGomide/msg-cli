@@ -39,6 +39,22 @@ export async function askShape(detected: Shape): Promise<Shape> {
   );
 }
 
+/**
+ * Asked only for a shape that could have a session — see `supportsAuth`. Yes is
+ * the default because the seeded stack assumes it; saying no drops the area
+ * entirely rather than seeding an "auth: none" doc nobody would maintain.
+ */
+export async function askAuth(): Promise<boolean> {
+  return unwrap(
+    await confirm({
+      message: 'Does this project need auth?',
+      active: 'Yes — sessions, guards, sign-in',
+      inactive: 'No — nothing to sign in to',
+      initialValue: true,
+    }),
+  );
+}
+
 export async function askSeed(): Promise<boolean> {
   return unwrap(
     await confirm({

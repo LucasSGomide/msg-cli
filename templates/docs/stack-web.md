@@ -5,19 +5,23 @@ That doc says what the rules are; this one says what enforces them.
 
 ## What is chosen
 
-| Concern      | Choice                     | Why this one                                              |
-| ------------ | -------------------------- | --------------------------------------------------------- |
-| Framework    | React                      | —                                                         |
-| Build        | Vite                       | Fast dev server, static env replacement at build time     |
-| Routing      | Tanstack Router            | Code-based routes, typed search params                    |
-| Server state | Tanstack Query             | Cache, invalidation and query states out of the box       |
-| API client   | Orval                      | Generates client **and** mock handlers from one spec      |
-| Network mock | MSW                        | Same handlers in tests and, if needed, in the browser     |
-| Tests        | Vitest + jsdom             | Same transform pipeline as the app                        |
-| E2E          | Playwright                 | Real browser, real API                                    |
-| Primitives   | Shadcn                     | Owned source, not a dependency to fight                   |
-| Styling      | Tailwind                   | Utilities in markup; tokens in one stylesheet             |
-| Lint         | oxlint                     | Fast enough to encode the import rules                    |
+| Concern      | Choice                          | Why this one                                              |
+| ------------ | ------------------------------- | --------------------------------------------------------- |
+| Framework    | React                           | —                                                         |
+| Build        | Vite                            | Fast dev server, static env replacement at build time     |
+| Routing      | Tanstack Router                 | Code-based routes, typed search params                    |
+| Server state | Tanstack Query                  | Cache, invalidation and query states out of the box       |
+| API client   | Orval                           | Generates client **and** mock handlers from one spec      |
+| Forms        | react-hook-form + zod           | Uncontrolled by default, one resolver, server errors map onto fields |
+| Network mock | MSW                             | Same handlers in tests and, if needed, in the browser     |
+| Tests        | Vitest + jsdom                  | Same transform pipeline as the app                        |
+| E2E          | Playwright                      | Real browser, real API                                    |
+| Primitives   | Shadcn                          | Owned source, not a dependency to fight                   |
+| Styling      | Tailwind                        | Utilities in markup; tokens in one stylesheet             |
+| Lint         | oxlint                          | Fast enough to encode the import rules                    |
+
+Auth is its own area: if this project has a sign-in, `docs/auth.md` holds the
+session hook, the route guards and the 401 rule, and nothing here assumes a user.
 
 ## Layout
 
@@ -34,7 +38,7 @@ src/
     mocks/                *.mock.ts
   shared/
     ui/                   Shadcn components (generated, lightly edited)
-    hooks/
+    hooks/                cross-feature hooks
     lib/                  pure helpers
   api/
     generated/            Orval output — client and MSW handlers. Never edited by hand
@@ -56,6 +60,32 @@ The alias for reaching a page from `app/` is `@/features/...`.
 Generated hooks live in `src/api/generated`; the fetch instance Orval is
 configured with is `src/api/client.ts`. Feature wrappers are
 `use-<thing>.hook.ts`.
+
+`api/client.ts` is the one place that touches the request itself. Beyond fetching
+it generates an `x-request-id` per request, so a browser report and a server log
+line share a value. Anything else that must happen on every request belongs here
+and nowhere else — auth adds its own rules to this same file.
+
+## Forms
+
+react-hook-form with a zod resolver.
+
+- The schema lives beside the form it validates, in the feature's `types/` or next
+  to the component — it is not generated, and it is not shared with the API.
+- Zod validates what the user typed; the API's `class-validator` still validates
+  what arrives. **Client validation is a UX affordance, never the enforcement.**
+- A server 4xx maps back onto fields with `setError`, so a rejected submit shows
+  under the offending input rather than in a toast. Anything the server rejects
+  without a field maps to the form-level error.
+- Shadcn's form primitives wrap react-hook-form already; visual rules for labels,
+  errors and required marks are [design.md](design.md).
+
+## Lists and pagination
+
+Every list endpoint returns the same cursor envelope (`items` + `nextCursor`), so
+every list consumes it the same way: `useInfiniteQuery`, with `getNextPageParam`
+reading `nextCursor` and stopping on `null`. There is no page-number UI, because
+the API has no page numbers.
 
 ## Codegen pipeline
 
@@ -147,3 +177,12 @@ it. Delete the orphaned model files _and_ `index.ts`, then re-run `make codegen`
 
 Usually spotted right after the API-side fix for a nullable property — see gotcha
 6 in [stack-api.md](stack-api.md).
+
+## Known gaps
+
+| Gap                        | Intended direction                                                    | Trigger                       |
+| -------------------------- | ----------------------------------------------------------------------- | ----------------------------- |
+| Error tracking / analytics | Unresearched, same as the API side — a top-level error boundary lands with it | First bug reported without a repro |
+| File upload UI             | Presigned URL from the API; the browser PUTs directly                 | First avatar or attachment    |
+| Hosting                    | Undecided, like the API's                                             | First deploy                  |
+| i18n                       | Not planned. Copy is inline English                                   | A second locale               |

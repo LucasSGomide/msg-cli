@@ -8,6 +8,8 @@ Usage
 init options
   --shape <s>     api | web | both | docs-only   (detected from the repo if omitted)
   --areas <a,b>   explicit area slugs; overrides --shape
+  --auth          include the auth area (the default; asked when interactive)
+  --no-auth       leave auth out — no sessions, guards or sign-in in the docs
   --seed          fill rule docs with the opinionated defaults
   --no-seed       leave rule docs empty (the default is to ask)
   --root <dir>    project root (default: cwd)

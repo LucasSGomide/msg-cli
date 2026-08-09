@@ -1,13 +1,14 @@
 import { resolve } from 'node:path';
 
 import { UsageError, parseAreas, type AreaSlug } from '../core/areas';
-import { areasForShape, detectShape, isShape, type Shape } from '../core/shapes';
+import { areasForShape, detectShape, isShape, supportsAuth, type Shape } from '../core/shapes';
 import { findAncestorManifest, scaffold } from '../core/scaffold';
-import { askSeed, askShape, isInteractive } from '../prompts';
+import { askAuth, askSeed, askShape, isInteractive } from '../prompts';
 
 export interface InitFlags {
   readonly shape?: string | undefined;
   readonly areas?: string | undefined;
+  readonly auth?: boolean | undefined;
   readonly seed?: boolean | undefined;
   readonly root?: string | undefined;
   readonly yes?: boolean | undefined;
@@ -28,6 +29,15 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     throw new UsageError(`unknown shape '${flags.shape}'. Known: api, web, both, docs-only`);
   }
 
+  if (flags.auth !== undefined && flags.areas !== undefined) {
+    throw new UsageError(
+      '--auth/--no-auth cannot be combined with --areas — list `auth` or omit it',
+    );
+  }
+  if (flags.auth !== undefined && flags.shape === 'docs-only') {
+    throw new UsageError('--auth/--no-auth means nothing for --shape docs-only');
+  }
+
   const explicit = flags.shape !== undefined || flags.areas !== undefined;
   const interactive = isInteractive() && !explicit && flags.yes !== true;
 
@@ -37,6 +47,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
 
   let areas: AreaSlug[];
   let shape: Shape | null = null;
+  let auth: boolean | null = null;
   if (flags.areas !== undefined) {
     areas = parseAreas(flags.areas);
     if (areas.length === 0) throw new UsageError('--areas was empty');
@@ -45,7 +56,11 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     shape = interactive
       ? await askShape(detected)
       : ((flags.shape as Shape | undefined) ?? detected);
-    areas = areasForShape(shape);
+    // Auth is included unless something says otherwise: the seeded stack docs
+    // assume a session, and a scaffold that quietly dropped it would be the
+    // surprising default.
+    auth = supportsAuth(shape) ? (flags.auth ?? (interactive ? await askAuth() : true)) : null;
+    areas = areasForShape(shape, auth !== false);
   }
 
   const seed = flags.seed ?? (interactive ? await askSeed() : false);
@@ -60,6 +75,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   const rec = scaffold({ root, areas, seed, version });
 
   if (shape) out.push(`  shape   ${shape}`);
+  if (auth !== null) out.push(`  auth    ${auth ? 'included' : 'not included'}`);
   out.push(`  areas   ${areas.join(', ')}`);
   out.push(`  docs    ${seed ? 'seeded with the defaults' : 'empty stubs'}`);
 

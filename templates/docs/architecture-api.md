@@ -44,7 +44,7 @@ a shortcut.
 ```
 request
   → request schema            shape and format only
-  → controller                validates, authorises, calls ONE use case. No logic.
+  → controller                validates, admits, calls ONE use case. No logic.
   → use case                  repository.findX() → aggregate methods → repository.save()
   → aggregate                 every invariant lives here
   → repository.save()         upsert; maps domain → rows inside
@@ -55,8 +55,9 @@ request
 Rules:
 
 - One use case per file, one public method (`execute`).
-- The controller's whole job is request validation, authorisation and delegation.
-  If a controller contains an `if` about domain state, it is in the wrong place.
+- The controller's whole job is request validation, any entry-point-level
+  permission check, and delegation. If a controller contains an `if` about domain
+  state, it is in the wrong place.
 - **Never import a use case from another use case.** If two commands must run
   together, that is a domain service — or, if it is genuinely asynchronous, a new
   pattern to be agreed first.
@@ -85,6 +86,12 @@ just holds use-case code belongs in the use case.
 Queries bypass the domain entirely: DAO interfaces in the application layer,
 implemented in infrastructure, returning read models shaped for the response.
 **Never load an aggregate to serve a read.**
+
+**Every list is paginated, and every list is paginated the same way.** One
+envelope shape shared by all of them, cursor-based rather than offset-based, with
+a validated maximum page size. An endpoint that returns a bare array is a bug
+waiting for the table to grow; an endpoint that invents its own envelope makes
+every client handle two shapes.
 
 **A controller may call a DAO directly when the call is a pure pass-through** —
 no composition, no shaping, no combining. The moment anything is derived from the

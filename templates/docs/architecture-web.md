@@ -57,6 +57,13 @@ promoted to a shared folder; features never import from each other's internals.
   testable: a component test passes data in, and only the page above it touches a
   query.
 
+## Forms
+
+**Client-side validation is a UX affordance, never enforcement.** The same rule
+exists on the back-end and that is the one that counts; the client's copy exists
+to answer sooner. A rejected submit shows its error **on the field**, which means
+the server's field errors must be mappable back onto the form.
+
 ## State
 
 Three places, in this order:
