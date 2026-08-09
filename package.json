@@ -12,6 +12,14 @@
   ],
   "license": "MIT",
   "author": "Lucas Gomide",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LucasSGomide/msg-cli.git"
+  },
+  "homepage": "https://github.com/LucasSGomide/msg-cli#readme",
+  "bugs": {
+    "url": "https://github.com/LucasSGomide/msg-cli/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.19"
@@ -21,8 +29,12 @@
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.js.json",
