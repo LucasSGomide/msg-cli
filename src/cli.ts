@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util';
 import { addArea } from './commands/add-area';
 import { check } from './commands/check';
 import { init } from './commands/init';
+import { uninstall } from './commands/uninstall';
 import { UsageError } from './core/areas';
 import { isCancellation } from './prompts';
 import { USAGE } from './usage';
@@ -21,6 +22,7 @@ const OPTIONS = {
   seed: { type: 'boolean' },
   'no-seed': { type: 'boolean' },
   root: { type: 'string' },
+  'dry-run': { type: 'boolean' },
   yes: { type: 'boolean', short: 'y' },
 } as const;
 
@@ -72,6 +74,13 @@ export async function run(argv: string[]): Promise<ExitCode> {
       }
       case 'check':
         return emit(check(resolveRoot(values.root)));
+      case 'uninstall': {
+        const result = await uninstall(
+          { root: values.root, dryRun: values['dry-run'], yes: values.yes },
+          readVersion(),
+        );
+        return emit(result);
+      }
       case 'add-area': {
         const slug = positionals[0];
         if (slug === undefined) throw new UsageError('add-area needs an area slug');

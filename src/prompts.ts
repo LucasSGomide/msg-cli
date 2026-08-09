@@ -55,6 +55,21 @@ export async function askAuth(): Promise<boolean> {
   );
 }
 
+/**
+ * Deletion is irreversible and the plan above it is long, so the default is no:
+ * a stray Enter must never remove a workspace.
+ */
+export async function askUninstall(): Promise<boolean> {
+  return unwrap(
+    await confirm({
+      message: 'Remove everything listed above?',
+      active: 'Remove it',
+      inactive: 'Leave it alone',
+      initialValue: false,
+    }),
+  );
+}
+
 export async function askSeed(): Promise<boolean> {
   return unwrap(
     await confirm({

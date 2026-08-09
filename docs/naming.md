@@ -9,4 +9,6 @@ preference, and the next person will not know whether to keep it.
 Numbered, because roadmap items cite them by number — renumbering breaks the
 citations, so append rather than reorder.
 
-<!-- Nothing here yet. Write the first rule the first time a decision repeats. -->
+1. Name a CLI command for the plain-English inverse of the command it undoes —
+   `uninstall` against `init`, never `clean-up` or `remove`. A user who guesses
+   the inverse of a verb they already typed should be right.

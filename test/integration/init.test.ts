@@ -290,6 +290,27 @@ describe('check', () => {
     const result = check(project());
     expect(result.code).toBe(1);
     expect(result.err.join('\n')).toContain('no project.yml');
+    expect(result.err.join('\n')).toContain('run `msg init`');
+  });
+
+  // `uninstall` refuses on a version mismatch, so the recorded version has to be
+  // one command away before anything is deleted.
+  it('prints the recorded version in the two-space report format', async () => {
+    const root = project();
+    await init({ root, shape: 'api', seed: false }, VERSION);
+
+    const result = check(root);
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`  msg_version -> ${VERSION}`);
+  });
+
+  it('says so when the manifest records no version', async () => {
+    const root = project();
+    await init({ root, shape: 'api', seed: false }, VERSION);
+    const manifest = readFileSync(join(root, 'project.yml'), 'utf8');
+    writeFileSync(join(root, 'project.yml'), manifest.replace(/^msg_version:.*$/m, ''), 'utf8');
+
+    expect(check(root).out).toContain('  msg_version -> not recorded');
   });
 });
 

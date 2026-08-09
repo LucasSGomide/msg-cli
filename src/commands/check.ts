@@ -4,7 +4,8 @@ import { join } from 'node:path';
 // The engine's parser, not a second one: the CLI and the vendored engine must
 // never disagree about what a manifest says.
 import { parseSimpleYaml } from '../../templates/scripts/roadmap-sync.mjs';
-import { MANIFEST } from '../core/manifest';
+import { MANIFEST, readRecordedVersion } from '../core/manifest';
+import { readVersion } from '../version';
 
 export interface CheckResult {
   readonly code: 0 | 1;
@@ -23,10 +24,14 @@ export function check(root: string): CheckResult {
     return { code: 1, out, err };
   }
 
-  const raw = parseSimpleYaml(readFileSync(manifest, 'utf8').replace(/\r\n?/g, '\n')) as Map<
-    string,
-    unknown
-  >;
+  const text = readFileSync(manifest, 'utf8');
+  const raw = parseSimpleYaml(text.replace(/\r\n?/g, '\n')) as Map<string, unknown>;
+
+  // Printed before anything else because `uninstall` refuses on a version
+  // mismatch, and this is how a user finds the version to run without opening
+  // the manifest.
+  const { recorded } = readRecordedVersion(text, readVersion());
+  out.push(`  msg_version -> ${recorded ?? 'not recorded'}`);
 
   const missing: string[] = [];
   for (const block of ['structure', 'areas']) {

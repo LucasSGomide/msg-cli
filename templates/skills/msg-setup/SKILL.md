@@ -84,9 +84,10 @@ areas:
   vocabulary and points every bullet using it at something a reader can open.
 - **`structure`** exists because folders have no rules to hold — they are
   locations, not conventions.
-- **`msg_version`** records which CLI scaffolded the project. Nothing reads it at
-  runtime; it is there so "why does this project behave differently" is
-  answerable.
+- **`msg_version`** records which CLI scaffolded the project. `msg check` prints
+  it and `msg uninstall` refuses to run when it does not match the CLI in hand —
+  removal compares files against the templates that wrote them, and only that
+  version's templates are the right ones to compare with.
 
 `Front-end` in `areas` is what makes an item's **User Experience** section
 mandatory. Remove the key and the requirement goes with it.

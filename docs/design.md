@@ -9,4 +9,7 @@ preference, and the next person will not know whether to keep it.
 Numbered, because roadmap items cite them by number — renumbering breaks the
 citations, so append rather than reorder.
 
-<!-- Nothing here yet. Write the first rule the first time a decision repeats. -->
+1. Report one path per line in two columns — two leading spaces, a verb padded
+   to eight characters, then the path (`  created project.yml`,
+   `  kept    docs/design.md — yours, remove by hand`). Every command reports
+   the same way, so a user who has read one report can read all of them.
