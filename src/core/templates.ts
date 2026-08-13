@@ -40,6 +40,7 @@ export const SKILLS = [
   'msg-roadmap-task-review',
   'msg-roadmap-sync',
   'msg-grill-me',
+  'msg-write-prompt',
 ] as const;
 
 export function readProjectTemplate(name: string): string {

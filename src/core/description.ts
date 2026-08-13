@@ -39,6 +39,7 @@ export const FOLDER_READMES: ReadonlyArray<readonly [string, string]> = [
   ['docs/explorations', 'explorations-README.md'],
   ['docs/ditched', 'ditched-README.md'],
   ['docs/tasks', 'tasks-README.md'],
+  ['docs/prompts', 'prompts-README.md'],
 ];
 
 export const MAKEFILE_MARKERS = ['# --- msg-roadmap:start', '# --- msg-roadmap:end'] as const;

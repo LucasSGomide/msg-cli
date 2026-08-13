@@ -15,6 +15,7 @@ npx @lucas-gomide/msg-cli init
 | `.claude/skills/`                                                  | The `msg-*` planning skills                                                 |
 | `project.yml`                                                      | The manifest every skill reads — folders and the area→doc map               |
 | `docs/roadmap/` `docs/tasks/` `docs/explorations/` `docs/ditched/` | The planning tree                                                           |
+| `docs/prompts/`                                                    | Structured prompts written by `msg-write-prompt`, not engine-managed        |
 | `docs/<area>.md`                                                   | One rule doc per area, empty by default or seeded with opinionated defaults |
 | `scripts/roadmap-sync.mjs`                                         | The sync engine, vendored — the project owns its copy                       |
 | `Makefile`                                                         | `roadmap-sync` and `roadmap-check` targets                                  |
