@@ -14,12 +14,20 @@ export const SHAPES = {
   'docs-only': ['design', 'naming'],
 } as const satisfies Record<string, readonly AreaSlug[]>;
 
-export type Shape = keyof typeof SHAPES;
+/**
+ * Not in `SHAPES`: it has no areas at all — picking it skips the roadmap
+ * scaffold entirely and prompts for a subset of the portable skills instead.
+ * See `PORTABLE_SKILLS` in `./templates` and `initSkillsOnly` in
+ * `../commands/init`.
+ */
+export const SKILLS_ONLY_SHAPE = 'skills-only';
 
-export const SHAPE_NAMES = Object.keys(SHAPES) as Shape[];
+export type Shape = keyof typeof SHAPES | typeof SKILLS_ONLY_SHAPE;
+
+export const SHAPE_NAMES = [...Object.keys(SHAPES), SKILLS_ONLY_SHAPE] as Shape[];
 
 export function isShape(value: string): value is Shape {
-  return Object.hasOwn(SHAPES, value);
+  return Object.hasOwn(SHAPES, value) || value === SKILLS_ONLY_SHAPE;
 }
 
 /**
@@ -28,7 +36,7 @@ export function isShape(value: string): value is Shape {
  * runtime to put a session in, and asking would be noise.
  */
 export function supportsAuth(shape: Shape): boolean {
-  return slugsOf(shape).includes('auth');
+  return shape !== SKILLS_ONLY_SHAPE && slugsOf(shape).includes('auth');
 }
 
 /**
@@ -37,11 +45,12 @@ export function supportsAuth(shape: Shape): boolean {
  * of an api project without auth is the api list minus one line.
  */
 export function areasForShape(shape: Shape, auth = true): AreaSlug[] {
+  if (shape === SKILLS_ONLY_SHAPE) return [];
   return slugsOf(shape).filter((slug) => auth || slug !== 'auth');
 }
 
 /** The tuples are readonly literal types; widen once so they can be iterated. */
-function slugsOf(shape: Shape): readonly AreaSlug[] {
+function slugsOf(shape: Exclude<Shape, typeof SKILLS_ONLY_SHAPE>): readonly AreaSlug[] {
   return SHAPES[shape];
 }
 

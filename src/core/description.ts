@@ -89,17 +89,27 @@ export function describeScaffold(options: DescriptionOptions): readonly Scaffold
     candidates: [claudeBlock(areas)],
   });
 
-  for (const skill of SKILLS) {
-    const source = join(SKILLS_DIR, skill, 'SKILL.md');
-    entries.push({
-      path: `.claude/skills/${skill}/SKILL.md`,
-      kind: 'copied',
-      source,
-      candidates: [readFileSync(source, 'utf8')],
-    });
-  }
+  for (const skill of SKILLS) entries.push(skillEntry(skill));
 
   return entries;
+}
+
+/**
+ * What `msg init --shape skills-only` writes: just the picked skills, none of
+ * the roadmap scaffold above.
+ */
+export function describeSkills(skills: readonly string[]): readonly ScaffoldEntry[] {
+  return skills.map(skillEntry);
+}
+
+function skillEntry(skill: string): ScaffoldEntry {
+  const source = join(SKILLS_DIR, skill, 'SKILL.md');
+  return {
+    path: `.claude/skills/${skill}/SKILL.md`,
+    kind: 'copied',
+    source,
+    candidates: [readFileSync(source, 'utf8')],
+  };
 }
 
 /** The marker pair delimiting an appended block, by the file it lands in. */

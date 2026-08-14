@@ -6,13 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { AREA_SLUGS, parseAreas, UsageError } from '../../src/core/areas';
 import { addAreaLine, renderManifest } from '../../src/core/manifest';
-import {
-  areasForShape,
-  detectShape,
-  SHAPE_NAMES,
-  SHAPES,
-  supportsAuth,
-} from '../../src/core/shapes';
+import { areasForShape, detectShape, SHAPE_NAMES, supportsAuth } from '../../src/core/shapes';
 
 const dirs: string[] = [];
 
@@ -48,10 +42,15 @@ describe('parseAreas', () => {
 describe('shapes', () => {
   it('maps every shape to known area slugs', () => {
     for (const shape of SHAPE_NAMES) {
-      for (const slug of SHAPES[shape]) {
+      for (const slug of areasForShape(shape)) {
         expect(AREA_SLUGS).toContain(slug);
       }
     }
+  });
+
+  it('gives skills-only no areas at all', () => {
+    expect(areasForShape('skills-only')).toEqual([]);
+    expect(supportsAuth('skills-only')).toBe(false);
   });
 
   it('gives `both` every area', () => {

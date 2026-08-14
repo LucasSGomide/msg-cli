@@ -17,6 +17,7 @@ export type ExitCode = 0 | 1 | 2;
 const OPTIONS = {
   shape: { type: 'string' },
   areas: { type: 'string' },
+  skills: { type: 'string' },
   auth: { type: 'boolean' },
   'no-auth': { type: 'boolean' },
   seed: { type: 'boolean' },
@@ -63,6 +64,7 @@ export async function run(argv: string[]): Promise<ExitCode> {
           {
             shape: values.shape,
             areas: values.areas,
+            skills: values.skills,
             auth,
             seed,
             root: values.root,

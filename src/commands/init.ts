@@ -1,9 +1,17 @@
 import { resolve } from 'node:path';
 
 import { UsageError, parseAreas, type AreaSlug } from '../core/areas';
-import { areasForShape, detectShape, isShape, supportsAuth, type Shape } from '../core/shapes';
-import { findAncestorManifest, scaffold } from '../core/scaffold';
-import { askAuth, askSeed, askShape, isInteractive } from '../prompts';
+import {
+  areasForShape,
+  detectShape,
+  isShape,
+  SKILLS_ONLY_SHAPE,
+  supportsAuth,
+  type Shape,
+} from '../core/shapes';
+import { findAncestorManifest, scaffold, scaffoldSkills } from '../core/scaffold';
+import { parsePortableSkills, type PortableSkill } from '../core/templates';
+import { askAuth, askSeed, askShape, askSkills, isInteractive } from '../prompts';
 
 export interface InitFlags {
   readonly shape?: string | undefined;
@@ -12,6 +20,7 @@ export interface InitFlags {
   readonly seed?: boolean | undefined;
   readonly root?: string | undefined;
   readonly yes?: boolean | undefined;
+  readonly skills?: string | undefined;
 }
 
 export interface InitResult {
@@ -26,7 +35,22 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   const root = resolve(flags.root ?? '.');
 
   if (flags.shape !== undefined && !isShape(flags.shape)) {
-    throw new UsageError(`unknown shape '${flags.shape}'. Known: api, web, both, docs-only`);
+    throw new UsageError(
+      `unknown shape '${flags.shape}'. Known: api, web, both, docs-only, skills-only`,
+    );
+  }
+
+  if (flags.skills !== undefined && flags.areas !== undefined) {
+    throw new UsageError('--skills cannot be combined with --areas');
+  }
+  if (flags.skills !== undefined && flags.shape !== undefined && flags.shape !== 'skills-only') {
+    throw new UsageError('--skills only applies to --shape skills-only');
+  }
+  if (flags.auth !== undefined && flags.shape === 'skills-only') {
+    throw new UsageError('--auth/--no-auth means nothing for --shape skills-only');
+  }
+  if (flags.seed !== undefined && flags.shape === 'skills-only') {
+    throw new UsageError('--seed/--no-seed means nothing for --shape skills-only');
   }
 
   if (flags.auth !== undefined && flags.areas !== undefined) {
@@ -56,6 +80,11 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     shape = interactive
       ? await askShape(detected)
       : ((flags.shape as Shape | undefined) ?? detected);
+
+    if (shape === SKILLS_ONLY_SHAPE) {
+      return initSkillsOnly({ flags, interactive, out, root });
+    }
+
     // Auth is included unless something says otherwise: the seeded stack docs
     // assume a session, and a scaffold that quietly dropped it would be the
     // surprising default.
@@ -96,4 +125,48 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   }
 
   return { code: 0, out, err };
+}
+
+interface SkillsOnlyOptions {
+  readonly flags: InitFlags;
+  readonly interactive: boolean;
+  readonly out: string[];
+  readonly root: string;
+}
+
+/**
+ * Picking the "skills only" shape bypasses areas, auth, seed, project.yml,
+ * the docs/ folders, and the CLAUDE.md block entirely — it writes just the
+ * picked skills' SKILL.md files, for a project that wants a portable skill
+ * without the roadmap scaffold.
+ */
+async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
+  const { flags, interactive, out, root } = options;
+
+  let skills: PortableSkill[];
+  if (flags.skills !== undefined) {
+    skills = parsePortableSkills(flags.skills);
+    if (skills.length === 0) throw new UsageError('--skills was empty');
+  } else if (interactive) {
+    skills = await askSkills();
+  } else {
+    throw new UsageError('--shape skills-only needs --skills, or a terminal to ask on');
+  }
+
+  const rec = scaffoldSkills(root, skills);
+
+  out.push('  shape   skills-only');
+  out.push(`  skills  ${skills.join(', ')}`);
+
+  const created = rec.changes.filter((c) => c.action === 'created');
+  const kept = rec.changes.filter((c) => c.action === 'kept');
+
+  for (const change of created) out.push(`  created ${change.path}`);
+  for (const change of kept) out.push(`  kept    ${change.path} (yours)`);
+
+  if (created.length === 0) {
+    out.push('  nothing to do — the project is already set up');
+  }
+
+  return { code: 0, out, err: [] };
 }

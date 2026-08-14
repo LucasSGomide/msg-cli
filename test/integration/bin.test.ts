@@ -61,6 +61,26 @@ describe.runIf(existsSync(BIN))('the built bin, invoked through a symlink', () =
     expect(existsSync(join(root, '.claude', 'skills', 'msg-grill-me', 'SKILL.md'))).toBe(true);
   });
 
+  it('scaffolds just the picked skill for --shape skills-only', () => {
+    const root = temp();
+    mkdirSync(join(root, '.git'), { recursive: true });
+
+    const result = linkedRun([
+      'init',
+      '--shape',
+      'skills-only',
+      '--skills',
+      'msg-grill-me',
+      '--root',
+      root,
+    ]);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(existsSync(join(root, '.claude', 'skills', 'msg-grill-me', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, 'project.yml'))).toBe(false);
+    expect(existsSync(join(root, 'docs'))).toBe(false);
+  });
+
   it('leaves a scaffolded project passing its own check', () => {
     const root = temp();
     mkdirSync(join(root, '.git'), { recursive: true });

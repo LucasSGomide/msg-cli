@@ -1,5 +1,6 @@
-import { cancel, confirm, isCancel, select } from '@clack/prompts';
+import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts';
 
+import { PORTABLE_SKILLS, type PortableSkill } from './core/templates';
 import type { Shape } from './core/shapes';
 
 export function isInteractive(): boolean {
@@ -34,7 +35,26 @@ export async function askShape(detected: Shape): Promise<Shape> {
         { value: 'web' as const, label: 'Web', hint: 'front-end, web stack, design, naming' },
         { value: 'both' as const, label: 'Both', hint: 'every area' },
         { value: 'docs-only' as const, label: 'Docs only', hint: 'design, naming' },
+        {
+          value: 'skills-only' as const,
+          label: 'Skills only',
+          hint: 'cherry-pick portable skills, no roadmap scaffold',
+        },
       ],
+    }),
+  );
+}
+
+/**
+ * Only asked down the `skills-only` branch, where there is no roadmap
+ * scaffold to imply a skill list from — the user has to name what they want.
+ */
+export async function askSkills(): Promise<PortableSkill[]> {
+  return unwrap(
+    await multiselect({
+      message: 'Which skills do you want?',
+      options: PORTABLE_SKILLS.map((skill) => ({ value: skill, label: skill })),
+      required: true,
     }),
   );
 }

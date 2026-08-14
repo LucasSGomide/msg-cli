@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import type { AreaSlug } from './areas';
-import { describeScaffold } from './description';
+import { describeScaffold, describeSkills, type ScaffoldEntry } from './description';
 import { Recorder } from './fs';
 import { MANIFEST } from './manifest';
 
@@ -14,10 +14,18 @@ export interface ScaffoldOptions {
 }
 
 export function scaffold(options: ScaffoldOptions): Recorder {
-  const { root } = options;
+  return applyEntries(options.root, describeScaffold(options));
+}
+
+/** The `--shape skills-only` path: just the picked skills, nothing else. */
+export function scaffoldSkills(root: string, skills: readonly string[]): Recorder {
+  return applyEntries(root, describeSkills(skills));
+}
+
+function applyEntries(root: string, entries: readonly ScaffoldEntry[]): Recorder {
   const rec = new Recorder(root);
 
-  for (const entry of describeScaffold(options)) {
+  for (const entry of entries) {
     const target = join(root, entry.path);
     switch (entry.kind) {
       case 'file':

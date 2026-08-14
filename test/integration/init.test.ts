@@ -268,6 +268,94 @@ describe('init', () => {
   });
 });
 
+describe('init --shape skills-only', () => {
+  it('writes only the picked skills, nothing else', async () => {
+    const root = project();
+    const result = await init({ root, shape: 'skills-only', skills: 'msg-grill-me' }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(listFiles(root)).toEqual(['.claude/skills/msg-grill-me/SKILL.md']);
+    expect(result.out.join('\n')).toContain('shape   skills-only');
+    expect(result.out.join('\n')).toContain('skills  msg-grill-me');
+  });
+
+  it('accepts more than one skill', async () => {
+    const root = project();
+    await init({ root, shape: 'skills-only', skills: 'msg-grill-me,msg-write-prompt' }, VERSION);
+
+    expect(listFiles(root)).toEqual([
+      '.claude/skills/msg-grill-me/SKILL.md',
+      '.claude/skills/msg-write-prompt/SKILL.md',
+    ]);
+  });
+
+  it('rejects a skill that is not portable', async () => {
+    const root = project();
+    await expect(
+      init({ root, shape: 'skills-only', skills: 'msg-setup' }, VERSION),
+    ).rejects.toThrow(/unknown skill\(s\) msg-setup/);
+  });
+
+  it('rejects an empty --skills list', async () => {
+    const root = project();
+    await expect(init({ root, shape: 'skills-only', skills: '' }, VERSION)).rejects.toThrow(
+      /--skills was empty/,
+    );
+  });
+
+  it('requires --skills when not interactive', async () => {
+    const root = project();
+    await expect(init({ root, shape: 'skills-only' }, VERSION)).rejects.toThrow(
+      /--shape skills-only needs --skills/,
+    );
+  });
+
+  it('rejects --skills combined with --areas', async () => {
+    const root = project();
+    await expect(init({ root, areas: 'naming', skills: 'msg-grill-me' }, VERSION)).rejects.toThrow(
+      /--skills cannot be combined with --areas/,
+    );
+  });
+
+  it('rejects --skills for a different shape', async () => {
+    const root = project();
+    await expect(init({ root, shape: 'api', skills: 'msg-grill-me' }, VERSION)).rejects.toThrow(
+      /--skills only applies to --shape skills-only/,
+    );
+  });
+
+  it('rejects --auth for skills-only', async () => {
+    const root = project();
+    await expect(
+      init({ root, shape: 'skills-only', skills: 'msg-grill-me', auth: false }, VERSION),
+    ).rejects.toThrow(/--auth\/--no-auth means nothing for --shape skills-only/);
+  });
+
+  it('rejects --seed for skills-only', async () => {
+    const root = project();
+    await expect(
+      init({ root, shape: 'skills-only', skills: 'msg-grill-me', seed: true }, VERSION),
+    ).rejects.toThrow(/--seed\/--no-seed means nothing for --shape skills-only/);
+  });
+
+  it('is idempotent — a second run reports nothing to do', async () => {
+    const root = project();
+    await init({ root, shape: 'skills-only', skills: 'msg-grill-me' }, VERSION);
+    const second = await init({ root, shape: 'skills-only', skills: 'msg-grill-me' }, VERSION);
+
+    expect(second.out.join('\n')).toContain('nothing to do');
+  });
+
+  it('never writes project.yml, docs/, or CLAUDE.md', async () => {
+    const root = project();
+    await init({ root, shape: 'skills-only', skills: 'msg-grill-me,msg-write-prompt' }, VERSION);
+
+    for (const path of ['project.yml', 'CLAUDE.md', 'Makefile', 'docs']) {
+      expect(listFiles(root).some((f) => f === path || f.startsWith(`${path}/`))).toBe(false);
+    }
+  });
+});
+
 describe('check', () => {
   it('passes on a freshly scaffolded project', async () => {
     const root = project();
