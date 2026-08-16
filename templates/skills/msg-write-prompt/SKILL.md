@@ -115,13 +115,23 @@ it in) checks its Status block first:
 
 - If `Status` already says `executed on <date>`, say so before proceeding —
   don't silently re-run without mention.
-- Once the work the prompt describes is actually done, update `Status` to
-  `executed on <today's date>`, ask the user one quick question — how well
-  the prompt performed, `0`–`10` — and write the answer into `Rating`. If the
-  user volunteers a reason (unprompted or in answer to a follow-up), append
-  it after an em dash: `**Rating:** 3 — missed the edge case around X`. Don't
-  press for a reason if the user gives a bare number; the field stays
-  `N` with no dash.
+- **Before writing any code, create a new branch dedicated to this prompt's
+  session.** Check first whether the repo already states its own
+  branching/VCS convention (a project CLAUDE.md, a VCS skill like
+  GitButler's, or similar) and follow it — naming, tool, everything. Only
+  when nothing says otherwise, default to: GitButler (`but`) if it's set up
+  in the repo, else a plain `git checkout -b`. Do not skip creating a branch
+  regardless of which path applies.
+- Once the work the prompt describes is actually done — this is the last
+  step of execution, not an afterthought the surrounding conversation can
+  crowd out — update `Status` to `executed on <today's date>` and **always**
+  ask the user one quick question — how well the prompt performed, `0`–`10`
+  — before considering the prompt's execution finished. Do not end the turn
+  without having asked. Write the answer into `Rating`. If the user
+  volunteers a reason (unprompted or in answer to a follow-up), append it
+  after an em dash: `**Rating:** 3 — missed the edge case around X`. Don't
+  press for a reason if the user gives a bare number; the field stays `N`
+  with no dash.
 
 ## How to talk
 
