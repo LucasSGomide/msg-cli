@@ -14,6 +14,9 @@ it, don't summarize it.
 ```markdown
 # Goal: <short descriptive text — the prompt's main goal>
 
+**Status:** not executed
+**Rating:** —
+
 ## Context
 <descriptive text, more detail on what the user wants to achieve>
 
@@ -53,7 +56,14 @@ Omit an inapplicable optional section entirely — no empty headings.
 
 1. **Read the request.** Map whatever it already states onto Goal, Context,
    Constraints, Tone, Output, Examples.
-2. **Assess the gaps:**
+2. **Check the scope.** Decide whether the request is one cohesive change
+   (several related parts of a single deliverable) or genuinely spans more
+   than one independent concern (e.g. "fix a skill, update the CLI, add an
+   agent, and create a new skill" — four unrelated deliverables). If it's
+   genuinely multiple concerns, stop drafting and tell the user it should be
+   split: propose the number of prompts and a one-line goal for each, and
+   confirm before writing anything. If it's one cohesive change, continue.
+3. **Assess the gaps:**
    - Goal unclear or missing → gap.
    - Context too thin for how ambitious the task sounds → gap.
    - The task clearly has real constraints but none are stated → gap.
@@ -61,23 +71,57 @@ Omit an inapplicable optional section entirely — no empty headings.
      (Tone when the output is a document; Output when the format is
      genuinely ambiguous) — never force them.
    - Examples are never a gap.
-3. **Map the gap size to a `msg-grill-me` effort level:**
+4. **Map the gap size to a `msg-grill-me` effort level:**
    - No real gaps → skip the grill; draft directly.
    - A little missing (e.g. Context thin, everything else clear) → `low`
      effort.
    - A lot missing (Goal vague, Context absent, Constraints unstated) →
      `high` effort.
    - Verbosity is always `med` — fixed, not inferred.
-4. **Invoke `msg-grill-me`** at the effort level from step 3 and `med`
+5. **Invoke `msg-grill-me`** at the effort level from step 4 and `med`
    verbosity, stating both explicitly. Point it at exactly the missing
    template fields as the branches to walk — not a generic plan grill.
-5. **Assemble the prompt** from the original request plus the grill's
-   answers, following the template and section rules above.
-6. **Write it to a file** under `docs/prompts/`, named
-   `<kebab-slug-of-the-goal>.md` (create the directory if it doesn't exist).
-   If that slug is already taken, append `-2`, `-3`, etc. — never overwrite
-   an existing prompt. Tell the user the path. Don't also paste the full
-   contents into chat.
+6. **Assemble the prompt(s)** from the original request plus the grill's
+   answers, following the template and section rules above. Every prompt
+   gets the `Status`/`Rating` block from the template, set to `not executed`
+   / `—`.
+7. **Name and number each file.** Prompt files live under `docs/prompts/`
+   (create the directory if it doesn't exist) and are named
+   `NN-<kebab-slug-of-the-goal>.md`, where `NN` is a zero-padded,
+   project-wide sequence number — scan existing filenames for the highest
+   `NN` prefix (ignore unnumbered legacy files) and increment by one per new
+   prompt. Numbers are permanent: never reuse or renumber an existing file.
+8. **Tag multi-prompt runs.** If step 2 produced more than one prompt, add a
+   `**Run:**` line to each file's Status block stating whether it can run in
+   parallel with its siblings or must run sequentially, e.g.:
+   ```markdown
+   **Run:** parallel with 02, 03 — no shared files
+   ```
+   or
+   ```markdown
+   **Run:** sequential — depends on 01
+   ```
+   Base the call on whether the prompts touch overlapping files/state. This
+   lets GitButler put independent prompts on separate branches worked in
+   parallel, and keep dependent ones sequential on the same stack. Omit this
+   line for a single-prompt run.
+9. **Write the file(s).** Never overwrite an existing prompt. Tell the user
+   the path(s). Don't also paste the full contents into chat.
+
+## Executing a written prompt
+
+Whatever invokes/runs a prompt file (an agent, a skill, or the user pasting
+it in) checks its Status block first:
+
+- If `Status` already says `executed on <date>`, say so before proceeding —
+  don't silently re-run without mention.
+- Once the work the prompt describes is actually done, update `Status` to
+  `executed on <today's date>`, ask the user one quick question — how well
+  the prompt performed, `0`–`10` — and write the answer into `Rating`. If the
+  user volunteers a reason (unprompted or in answer to a follow-up), append
+  it after an em dash: `**Rating:** 3 — missed the edge case around X`. Don't
+  press for a reason if the user gives a bare number; the field stays
+  `N` with no dash.
 
 ## How to talk
 
