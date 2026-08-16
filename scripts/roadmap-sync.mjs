@@ -212,6 +212,10 @@ export function loadConfig(startDir) {
     for (const name of ['structure', 'areas']) {
       for (const [key, value] of block(name)) manifestPaths.push({ block: name, key, value });
     }
+    const requirementsFile = raw.get('requirementsFile');
+    if (typeof requirementsFile === 'string' && requirementsFile.trim() !== '') {
+      manifestPaths.push({ block: 'requirementsFile', key: '', value: requirementsFile });
+    }
   }
 
   return {
@@ -522,7 +526,8 @@ export function validate(cfg, items, problems) {
 export function validateManifest(cfg, problems) {
   for (const { block, key: name, value } of cfg.manifestPaths) {
     if (!existsSync(join(cfg.root, value))) {
-      problems.push(`project.yml ${block}.${name} -> ${value} points at nothing`);
+      const label = name ? `${block}.${name}` : block;
+      problems.push(`project.yml ${label} -> ${value} points at nothing`);
     }
   }
 }

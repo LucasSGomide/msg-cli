@@ -27,6 +27,7 @@ docs/tasks/README.md
 docs/explorations/README.md
 docs/ditched/README.md
 docs/<area>.md                     one rule doc per area
+docs/requirements.md               append-only log of user needs and functional requirements
 scripts/roadmap-sync.mjs           the engine, vendored
 Makefile                           roadmap-sync and roadmap-check targets
 CLAUDE.md                          a delimited msg-roadmap block
@@ -76,6 +77,8 @@ areas:
   Auth: docs/auth.md
   Design: docs/design.md
   Naming: docs/naming.md
+
+requirementsFile: docs/requirements.md
 ```
 
 - **`areas`** is the load-bearing block. The key is the **bold prefix** a roadmap
@@ -84,6 +87,9 @@ areas:
   vocabulary and points every bullet using it at something a reader can open.
 - **`structure`** exists because folders have no rules to hold — they are
   locations, not conventions.
+- **`requirementsFile`** points at a single append-only log of user needs and
+  functional requirements — not a rule doc, so it is a sibling top-level key
+  rather than an `areas` entry.
 - **`msg_version`** records which CLI scaffolded the project. `msg check` prints
   it and `msg uninstall` refuses to run when it does not match the CLI in hand —
   removal compares files against the templates that wrote them, and only that

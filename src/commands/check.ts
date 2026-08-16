@@ -44,6 +44,13 @@ export function check(root: string): CheckResult {
     }
   }
 
+  const requirementsFile = raw.get('requirementsFile');
+  if (typeof requirementsFile === 'string' && requirementsFile.trim() !== '') {
+    const ok = existsSync(join(root, requirementsFile));
+    out.push(`  requirementsFile -> ${requirementsFile}  ${ok ? 'ok' : 'MISSING'}`);
+    if (!ok) missing.push(`requirementsFile -> ${requirementsFile}`);
+  }
+
   if (missing.length) {
     err.push(`\n${missing.length} path(s) in ${MANIFEST} point at nothing.`);
     return { code: 1, out, err };

@@ -15,12 +15,22 @@ export const STRUCTURE: ReadonlyArray<readonly [string, string]> = [
   ['ditched', 'docs/ditched/'],
 ];
 
+/**
+ * The single append-only log of user needs and functional requirements. Not a
+ * rule doc — it's tracked content, so it lives as its own top-level key rather
+ * than under `areas`.
+ */
+export const REQUIREMENTS_FILE = 'docs/requirements.md';
+
 const HEADER = `# Project manifest. The msg-roadmap skills read this and nothing else about
 # where things live — which is what makes them portable.
 #
 # Every entry under \`areas\` points at the doc holding that area's rules. The
 # key is also the bold bullet prefix a roadmap item's Key Areas section must
-# use, so adding an area here adds it to the planning vocabulary.`;
+# use, so adding an area here adds it to the planning vocabulary.
+#
+# \`requirementsFile\` is different: it's a single append-only log of user needs
+# and functional requirements, not a rule doc.`;
 
 export function renderManifest(areas: readonly AreaSlug[], version: string): string {
   const lines = [HEADER, '', `msg_version: ${version}`, '', 'structure:'];
@@ -30,6 +40,7 @@ export function renderManifest(areas: readonly AreaSlug[], version: string): str
     const area = AREAS[slug];
     lines.push(`  ${area.label}: ${area.doc}`);
   }
+  lines.push('', `requirementsFile: ${REQUIREMENTS_FILE}`);
   return `${lines.join('\n')}\n`;
 }
 

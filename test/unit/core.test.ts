@@ -121,6 +121,11 @@ describe('renderManifest', () => {
       expect(manifest).toContain(`  ${folder}: docs/${folder}/`);
     }
   });
+
+  it('carries requirementsFile as a top-level key, not nested under areas', () => {
+    const manifest = renderManifest(['naming'], '1.2.3');
+    expect(manifest).toMatch(/^requirementsFile: docs\/requirements\.md$/m);
+  });
 });
 
 describe('addAreaLine', () => {
@@ -130,7 +135,10 @@ describe('addAreaLine', () => {
     const updated = addAreaLine(base, 'design')!;
     expect(updated).toContain('  Naming: docs/naming.md');
     expect(updated).toContain('  Design: docs/design.md');
-    expect(updated.trimEnd().endsWith('  Design: docs/design.md')).toBe(true);
+    // Lands right before the block that follows `areas:` (`requirementsFile`),
+    // not at the end of the whole manifest.
+    const areas = updated.slice(updated.indexOf('areas:'), updated.indexOf('requirementsFile:'));
+    expect(areas.trimEnd().endsWith('  Design: docs/design.md')).toBe(true);
   });
 
   it('returns null when the label is already listed', () => {

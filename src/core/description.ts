@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { AREAS, type AreaSlug } from './areas';
-import { MANIFEST, renderManifest } from './manifest';
+import { MANIFEST, REQUIREMENTS_FILE, renderManifest } from './manifest';
 import { ENGINE_SRC, SKILLS, SKILLS_DIR, readDocTemplate, readProjectTemplate } from './templates';
 
 /**
@@ -67,6 +67,12 @@ export function describeScaffold(options: DescriptionOptions): readonly Scaffold
   for (const slug of areas) {
     entries.push({ path: AREAS[slug].doc, kind: 'file', candidates: ruleDocBodies(slug, seed) });
   }
+
+  entries.push({
+    path: REQUIREMENTS_FILE,
+    kind: 'file',
+    candidates: [readProjectTemplate('requirements.md')],
+  });
 
   entries.push({
     path: 'scripts/roadmap-sync.mjs',

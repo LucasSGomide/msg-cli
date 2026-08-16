@@ -86,6 +86,7 @@ describe('init', () => {
       'docs/explorations/README.md',
       'docs/naming.md',
       'docs/prompts/README.md',
+      'docs/requirements.md',
       'docs/roadmap/README.md',
       'docs/stack-api.md',
       'docs/stack-web.md',
@@ -157,6 +158,32 @@ describe('init', () => {
 
     expect(readFileSync(join(root, 'docs/design.md'), 'utf8')).toBe('MINE\n');
     expect(result.out.join('\n')).toContain('kept    docs/design.md (yours)');
+  });
+
+  it('scaffolds docs/requirements.md with the table header row and no data rows, once', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    const requirements = readFileSync(join(root, 'docs/requirements.md'), 'utf8');
+
+    expect(requirements).toContain(
+      '| Feature | User Need Code | User Need Details | Functional Requirement Code | Functional Requirement Details | Addition Date |',
+    );
+    expect(requirements).not.toMatch(/\| UN\.\d/);
+
+    const second = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    expect(second.out.join('\n')).toContain('kept    docs/requirements.md (yours)');
+    expect(readFileSync(join(root, 'docs/requirements.md'), 'utf8')).toBe(requirements);
+  });
+
+  it('never overwrites an existing docs/requirements.md', async () => {
+    const root = project();
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    writeFileSync(join(root, 'docs/requirements.md'), 'MINE\n', 'utf8');
+
+    const result = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    expect(readFileSync(join(root, 'docs/requirements.md'), 'utf8')).toBe('MINE\n');
+    expect(result.out.join('\n')).toContain('kept    docs/requirements.md (yours)');
   });
 
   it('appends to an existing Makefile rather than clobbering it', async () => {
@@ -392,6 +419,16 @@ describe('check', () => {
     const result = check(root);
     expect(result.code).toBe(0);
     expect(result.out).toContain(`  msg_version -> ${VERSION}`);
+  });
+
+  it('fails and names requirementsFile when docs/requirements.md is deleted', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    rmSync(join(root, 'docs/requirements.md'));
+
+    const result = check(root);
+    expect(result.code).toBe(1);
+    expect(result.out.join('\n')).toContain('requirementsFile -> docs/requirements.md  MISSING');
   });
 
   it('says so when the manifest records no version', async () => {
