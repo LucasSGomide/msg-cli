@@ -16,11 +16,22 @@ permanent ID, never renumbered**. Ordering lives in this table only.
 - The prose above the table is hand-written and says **why** the next item is
   next. The table sorts by estimate; that sort is not a priority.
 
-**Next up: _nothing yet._**
+**Next up: 03.** 02 landed the CQRS rewrite of the backend architecture doc, so
+the backend template is settled. 03 is the natural next pick — it is the
+frontend counterpart, and refining it now means the six remaining items are all
+being planned against settled architecture docs on both sides rather than
+against docs still in flux.
 
 ## Ready
 
-_(none)_
+| # | Item | Est | Depends on | Status |
+|---|---|---|---|---|
+| [03](03-refine-frontend-architecture-template.md) | Refine frontend architecture template | 8 | — | not-started |
+| [08](08-refine-design-rules-template.md) | Refine design rules template | 8 | — | not-started |
+| [05](05-refine-backend-stack-template.md) | Refine backend stack template | 6 | — | not-started |
+| [06](06-refine-frontend-stack-template.md) | Refine frontend stack template | 6 | — | not-started |
+| [07](07-refine-auth-template.md) | Refine auth template | 6 | — | not-started |
+| [04](04-refine-naming-conventions-template.md) | Refine naming conventions template | 5 | — | not-started |
 
 ## Blocked
 
