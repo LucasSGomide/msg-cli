@@ -303,3 +303,41 @@ describe('uninstall', () => {
     expect(listFiles(root)).toEqual(['CLAUDE.md', 'Makefile']);
   });
 });
+
+// Roadmap item 09 assumed uninstall needs no code change, because it builds its
+// plan from the same describeScaffold that init writes from. These tests are
+// what turns that assumption into a fact.
+describe('uninstall and the pre-roadmap skills', () => {
+  const PRE_ROADMAP = '.claude/skills/msg-pre-roadmap/SKILL.md';
+  const BRAINSTORM = '.claude/skills/msg-brainstorm/SKILL.md';
+
+  it('plans both new skills for removal without a change to its own code', async () => {
+    const root = await scaffolded();
+    const plan = planOf(root);
+
+    expect(outcomeFor(plan, PRE_ROADMAP)).toBe('remove');
+    expect(outcomeFor(plan, BRAINSTORM)).toBe('remove');
+  });
+
+  it('deletes both, leaving no .claude/skills behind', async () => {
+    const root = await scaffolded('both');
+    expect(listFiles(root)).toContain(PRE_ROADMAP);
+    expect(listFiles(root)).toContain(BRAINSTORM);
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(listFiles(root)).toEqual([]);
+    expect(existsSync(join(root, '.claude', 'skills'))).toBe(false);
+  });
+
+  it('keeps a hand-edited msg-brainstorm and says whose it is', async () => {
+    const root = await scaffolded();
+    writeFileSync(join(root, BRAINSTORM), '# Mine now\n', 'utf8');
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.out.join('\n')).toContain(`kept    ${BRAINSTORM} — yours, remove by hand`);
+    expect(existsSync(join(root, BRAINSTORM))).toBe(true);
+  });
+});

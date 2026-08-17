@@ -32,15 +32,23 @@ export const DOCS_DIR = join(TEMPLATES, 'docs');
 export const PROJECT_DIR = join(TEMPLATES, 'project');
 export const ENGINE_SRC = join(TEMPLATES, 'scripts', 'roadmap-sync.mjs');
 
-/** The skills a scaffolded project gets. msg-grill-me is here because
- * msg-roadmap-plan-item invokes it directly — without it the pipeline breaks on
- * a fresh machine. */
+/**
+ * The skills a scaffolded project gets, in pipeline order. msg-grill-me and
+ * msg-brainstorm are here because msg-roadmap-plan-item and msg-pre-roadmap
+ * invoke them directly — without them the pipeline breaks on a fresh machine.
+ *
+ * This list must stay set-equal to the folders under `templates/skills/`; a
+ * name here with no folder crashes `init` at runtime, and a folder with no name
+ * here silently never ships. `test/unit/skills.test.ts` asserts both directions.
+ */
 export const SKILLS = [
   'msg-setup',
+  'msg-pre-roadmap',
   'msg-roadmap-plan-item',
   'msg-roadmap-task-breakdown',
   'msg-roadmap-task-review',
   'msg-roadmap-sync',
+  'msg-brainstorm',
   'msg-grill-me',
   'msg-write-prompt',
 ] as const;
@@ -51,7 +59,7 @@ export const SKILLS = [
  * own, without the rest of the planning workflow — see `msg init --shape
  * skills-only`.
  */
-export const PORTABLE_SKILLS = ['msg-grill-me', 'msg-write-prompt'] as const;
+export const PORTABLE_SKILLS = ['msg-brainstorm', 'msg-grill-me', 'msg-write-prompt'] as const;
 
 export type PortableSkill = (typeof PORTABLE_SKILLS)[number];
 

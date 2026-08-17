@@ -69,7 +69,9 @@ describe('init', () => {
 
     expect(result.code).toBe(0);
     expect(listFiles(root)).toEqual([
+      '.claude/skills/msg-brainstorm/SKILL.md',
       '.claude/skills/msg-grill-me/SKILL.md',
+      '.claude/skills/msg-pre-roadmap/SKILL.md',
       '.claude/skills/msg-roadmap-plan-item/SKILL.md',
       '.claude/skills/msg-roadmap-sync/SKILL.md',
       '.claude/skills/msg-roadmap-task-breakdown/SKILL.md',
@@ -523,5 +525,39 @@ describe('the area registry', () => {
   it('maps every area to a distinct doc', () => {
     const docs = Object.values(AREAS).map((a) => a.doc);
     expect(new Set(docs).size).toBe(docs.length);
+  });
+});
+
+// Roadmap item 09. msg-roadmap-plan-item hard-stops with "run /msg-pre-roadmap
+// first", so a workspace without these two reaches a gate no skill can pass.
+describe('init and the pre-roadmap skills', () => {
+  const PRE_ROADMAP = '.claude/skills/msg-pre-roadmap/SKILL.md';
+  const BRAINSTORM = '.claude/skills/msg-brainstorm/SKILL.md';
+
+  it('writes both SKILL.md paths for a full scaffold', async () => {
+    const root = project();
+    await init({ root, shape: 'both', seed: false }, VERSION);
+
+    expect(listFiles(root)).toContain(PRE_ROADMAP);
+    expect(listFiles(root)).toContain(BRAINSTORM);
+  });
+
+  it('reports both as kept on a second run', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    const second = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    const out = second.out.join('\n');
+
+    expect(out).toContain(`kept    ${PRE_ROADMAP} (yours)`);
+    expect(out).toContain(`kept    ${BRAINSTORM} (yours)`);
+  });
+
+  it('scaffolds msg-brainstorm on its own as a portable skill', async () => {
+    const root = project();
+    const result = await init({ root, shape: 'skills-only', skills: 'msg-brainstorm' }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(listFiles(root)).toEqual([BRAINSTORM]);
   });
 });

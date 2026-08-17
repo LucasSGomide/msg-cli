@@ -35,14 +35,14 @@
 
 ## Acceptance criteria
 
-- [ ] `(unit)` `SKILLS` and the folder names under `templates/skills/` are set-equal
-- [ ] `(unit)` the set-equality failure message names the folders missing from each side
-- [ ] `(unit)` every `PORTABLE_SKILLS` name appears in `SKILLS`
-- [ ] `(integration)` `init` writes the `msg-pre-roadmap` and `msg-brainstorm` SKILL.md paths
-- [ ] `(integration)` a second `init` run reports both as `kept`
-- [ ] `(unit)` `parsePortableSkills('msg-brainstorm')` returns it rather than throwing
-- [ ] `(unit)` the unknown-skill error message enumerates three portable names
-- [ ] `(integration)` `uninstall` removes both new skills without a change to its own code
+- [x] `(unit)` `SKILLS` and the folder names under `templates/skills/` are set-equal
+- [x] `(unit)` the set-equality failure message names the folders missing from each side
+- [x] `(unit)` every `PORTABLE_SKILLS` name appears in `SKILLS`
+- [x] `(integration)` `init` writes the `msg-pre-roadmap` and `msg-brainstorm` SKILL.md paths
+- [x] `(integration)` a second `init` run reports both as `kept`
+- [x] `(unit)` `parsePortableSkills('msg-brainstorm')` returns it rather than throwing
+- [x] `(unit)` the unknown-skill error message enumerates three portable names
+- [x] `(integration)` `uninstall` removes both new skills without a change to its own code
 
 ## References
 
