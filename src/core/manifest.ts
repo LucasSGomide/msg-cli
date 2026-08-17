@@ -107,11 +107,10 @@ export function addTopLevelKey(manifest: string, key: string, value: string): st
   const end = endOfAreasBlock(manifest, lines);
   if (end === null) return null;
 
-  // Exactly one line is added. `renderManifest` separates the block from the
-  // key with a blank line, so when the manifest already has that separator the
-  // key goes after it rather than a second one being introduced.
-  const at = lines[end]?.trim() === '' ? end + 1 : end;
-  lines.splice(at, 0, `${key}: ${value}`);
+  // Exactly one line is added, right where the block ends — no blank line is
+  // introduced, so whatever spacing and trailing content the manifest already
+  // had comes through untouched.
+  lines.splice(end, 0, `${key}: ${value}`);
   return lines.join('\n');
 }
 

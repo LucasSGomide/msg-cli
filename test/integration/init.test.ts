@@ -573,3 +573,101 @@ describe('init and the pre-roadmap skills', () => {
     );
   });
 });
+
+// Roadmap 10 — healing a manifest that predates a top-level key. `init` never
+// overwrites, so a manifest written before `requirementsFile` existed could
+// otherwise never gain it, and the pre-roadmap skill stops without it.
+describe('init, healing a manifest missing a top-level key', () => {
+  // Hand-edited, commented, with a deliberately trimmed `areas:` block and no
+  // `requirementsFile` — the shape this repo's own manifest had.
+  const legacy = [
+    '# Project manifest, written before requirementsFile existed.',
+    '#',
+    '# Hand-edited: these comments have to survive a re-run.',
+    '',
+    `msg_version: ${VERSION}`,
+    '',
+    'structure:',
+    '  roadmap: docs/roadmap/',
+    '  tasks: docs/tasks/',
+    '  explorations: docs/explorations/',
+    '  ditched: docs/ditched/',
+    '',
+    'areas:',
+    '  # trimmed to one area on purpose',
+    '  Naming: docs/naming.md',
+    '',
+  ].join('\n');
+
+  function legacyProject(): string {
+    const root = project();
+    writeFileSync(join(root, 'project.yml'), legacy, 'utf8');
+    return root;
+  }
+
+  const manifestOf = (root: string): string => readFileSync(join(root, 'project.yml'), 'utf8');
+
+  it('appends the missing key and reports it appended, not kept', async () => {
+    const root = legacyProject();
+    const result = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain('  appended project.yml');
+    expect(result.out).not.toContain('  kept    project.yml (yours)');
+    expect(manifestOf(root)).toContain('requirementsFile: docs/requirements.md');
+  });
+
+  it('leaves the comments and area entries byte-identical apart from the one line', async () => {
+    const root = legacyProject();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    const after = manifestOf(root);
+    expect(after.split('\n').length).toBe(legacy.split('\n').length + 1);
+    expect(after.replace('requirementsFile: docs/requirements.md\n', '')).toBe(legacy);
+  });
+
+  it('reports a no-op on the second run rather than appending again', async () => {
+    const root = legacyProject();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    const healed = manifestOf(root);
+
+    const second = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    expect(second.out).not.toContain('  appended project.yml');
+    expect(second.out).toContain('  kept    project.yml (yours)');
+    expect(manifestOf(root)).toBe(healed);
+  });
+
+  it('heals before the scaffold runs, so the rest of the run sees the whole manifest', async () => {
+    const root = legacyProject();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    // The manifest was written before anything the scaffold created, and the
+    // scaffold's own never-overwrite pass left the healed copy alone.
+    expect(statSync(join(root, 'project.yml')).mtimeMs).toBeLessThanOrEqual(
+      statSync(join(root, 'docs/requirements.md')).mtimeMs,
+    );
+    expect(manifestOf(root)).toContain('# Hand-edited: these comments have to survive a re-run.');
+    expect(manifestOf(root)).toContain('requirementsFile: docs/requirements.md');
+  });
+
+  it('leaves structure and areas gaps alone — only top-level keys are healed', async () => {
+    const root = legacyProject();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    const after = manifestOf(root);
+    expect(after).toContain('  # trimmed to one area on purpose');
+    expect(after).not.toContain('Design: docs/design.md');
+  });
+
+  it('makes check pass where it did not before', async () => {
+    const root = legacyProject();
+    expect(check(root).code).toBe(1);
+
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    const result = check(root);
+    expect(result.code).toBe(0);
+    expect(result.out.join('\n')).toContain('requirementsFile -> docs/requirements.md  ok');
+  });
+});

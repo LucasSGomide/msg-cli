@@ -1,10 +1,10 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import type { AreaSlug } from './areas';
 import { describeScaffold, describeSkills, type ScaffoldEntry } from './description';
 import { Recorder } from './fs';
-import { MANIFEST } from './manifest';
+import { addTopLevelKey, EXPECTED_TOP_LEVEL_KEYS, MANIFEST } from './manifest';
 
 export interface ScaffoldOptions {
   readonly root: string;
@@ -15,6 +15,34 @@ export interface ScaffoldOptions {
 
 export function scaffold(options: ScaffoldOptions): Recorder {
   return applyEntries(options.root, describeScaffold(options));
+}
+
+/**
+ * Fill in the top-level keys an existing manifest is missing, and nothing else.
+ *
+ * This is the one place the never-overwrite rule bends, and the narrow scope is
+ * what keeps the promise true: only absent top-level keys, appended textually,
+ * with every existing value, comment and ordering left exactly as the user
+ * wrote it. Gaps inside `structure:` and `areas:` are deliberately left alone.
+ *
+ * Records nothing when there is nothing missing, so a re-run reports the
+ * manifest the way it always did rather than claiming a write.
+ */
+export function healManifest(root: string): Recorder {
+  const rec = new Recorder(root);
+  const path = join(root, MANIFEST);
+  if (!existsSync(path)) return rec;
+
+  const original = readFileSync(path, 'utf8');
+  let text = original;
+  for (const [key, value] of EXPECTED_TOP_LEVEL_KEYS) {
+    text = addTopLevelKey(text, key, value) ?? text;
+  }
+
+  if (text === original) return rec;
+  writeFileSync(path, text, 'utf8');
+  rec.record(path, 'appended');
+  return rec;
 }
 
 /** The `--shape skills-only` path: just the picked skills, nothing else. */

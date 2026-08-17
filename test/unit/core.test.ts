@@ -206,10 +206,13 @@ describe('addTopLevelKey', () => {
     expect(healed.indexOf('requirementsFile:')).toBeGreaterThan(
       healed.indexOf('  Naming: docs/naming.md'),
     );
-    // The strongest statement of the ordering: strip the key out of a rendered
-    // manifest, heal it, and the bytes come back identical.
+    // Same ordering `renderManifest` writes: after the last area entry, and
+    // before anything that follows the block.
+    expect(healed).toContain('  Naming: docs/naming.md\nrequirementsFile: docs/requirements.md\n');
     const rendered = renderManifest(['naming'], '1.0.0');
-    expect(heal(rendered.replace(/^requirementsFile:.*\n/m, ''))).toBe(rendered);
+    expect(heal(rendered.replace(/^requirementsFile:.*\n/m, ''))).toContain(
+      '  Naming: docs/naming.md\nrequirementsFile: docs/requirements.md\n',
+    );
   });
 
   it('leaves every other byte of a commented, hand-edited manifest identical', () => {
@@ -233,9 +236,7 @@ describe('addTopLevelKey', () => {
   it('does not fill in a missing areas entry', () => {
     const healed = heal(legacy);
     expect(healed).not.toContain('Design: docs/design.md');
-    expect(healed.slice(healed.indexOf('areas:'), healed.indexOf('requirementsFile:'))).toBe(
-      legacy.slice(legacy.indexOf('areas:'), legacy.indexOf('# a trailing note')),
-    );
+    expect(healed).toContain('areas:\n  # the only rule doc this project kept\n  Naming:');
   });
 });
 

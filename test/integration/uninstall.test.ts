@@ -341,3 +341,57 @@ describe('uninstall and the pre-roadmap skills', () => {
     expect(existsSync(join(root, BRAINSTORM))).toBe(true);
   });
 });
+
+// Roadmap 10 — what removal does with a manifest `init` healed. Pinned so a
+// later change has to state its intent rather than drift into one by accident.
+describe('uninstall, against a healed manifest', () => {
+  async function healed(): Promise<string> {
+    const root = project();
+    writeFileSync(
+      join(root, 'project.yml'),
+      [
+        '# Project manifest, written before requirementsFile existed.',
+        '',
+        `msg_version: ${VERSION}`,
+        '',
+        'structure:',
+        '  roadmap: docs/roadmap/',
+        '  tasks: docs/tasks/',
+        '  explorations: docs/explorations/',
+        '  ditched: docs/ditched/',
+        '',
+        'areas:',
+        '  Naming: docs/naming.md',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    return root;
+  }
+
+  it('still reads the healed manifest — the appended key does not block the plan', async () => {
+    const root = await healed();
+    expect(readFileSync(join(root, 'project.yml'), 'utf8')).toContain(
+      'requirementsFile: docs/requirements.md',
+    );
+
+    expect(outcomeFor(planOf(root), 'project.yml')).toBe('remove');
+  });
+
+  // `project.yml` is the one exemption from the byte-comparison in `plan.ts`:
+  // it is hand-edited by design, so it is removed regardless of content. A
+  // healed manifest changes nothing about that, and healing deliberately did
+  // not widen its scope to change it.
+  it('removes the healed manifest rather than keeping it as user-modified', async () => {
+    const root = await healed();
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(result.out.join('\n')).toContain(
+      '  remove  project.yml — hand-edited by design, removed regardless',
+    );
+    expect(existsSync(join(root, 'project.yml'))).toBe(false);
+  });
+});

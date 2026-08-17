@@ -9,7 +9,7 @@ import {
   supportsAuth,
   type Shape,
 } from '../core/shapes';
-import { findAncestorManifest, scaffold, scaffoldSkills } from '../core/scaffold';
+import { findAncestorManifest, healManifest, scaffold, scaffoldSkills } from '../core/scaffold';
 import { parsePortableSkills, type PortableSkill } from '../core/templates';
 import { askAuth, askSeed, askShape, askSkills, isInteractive } from '../prompts';
 
@@ -101,16 +101,28 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     );
   }
 
+  // Before the scaffold, so everything downstream — and the user's next command
+  // — reads a manifest that carries every key the skills expect.
+  const healed = healManifest(root);
   const rec = scaffold({ root, areas, seed, version });
+
+  // A manifest that was healed was appended to, not kept: the scaffold reports
+  // the same path as `kept` because it never overwrites, and reporting both
+  // verbs for one path would contradict itself.
+  const healedPaths = new Set(healed.changes.map((change) => change.path));
+  const changes = [
+    ...healed.changes,
+    ...rec.changes.filter((change) => !healedPaths.has(change.path)),
+  ];
 
   if (shape) out.push(`  shape   ${shape}`);
   if (auth !== null) out.push(`  auth    ${auth ? 'included' : 'not included'}`);
   out.push(`  areas   ${areas.join(', ')}`);
   out.push(`  docs    ${seed ? 'seeded with the defaults' : 'empty stubs'}`);
 
-  const created = rec.changes.filter((c) => c.action === 'created');
-  const appended = rec.changes.filter((c) => c.action === 'appended');
-  const kept = rec.changes.filter((c) => c.action === 'kept');
+  const created = changes.filter((c) => c.action === 'created');
+  const appended = changes.filter((c) => c.action === 'appended');
+  const kept = changes.filter((c) => c.action === 'kept');
 
   for (const change of created) out.push(`  created ${change.path}`);
   for (const change of appended) out.push(`  appended ${change.path}`);
