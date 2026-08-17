@@ -1,6 +1,6 @@
 # 09 — Ship the pre-roadmap skills in the scaffold
 
-**Depends on:** — · **Status:** not-started · **Estimate:** 5
+**Depends on:** — · **Status:** done · **Estimate:** 5
 
 ## Context
 
@@ -55,10 +55,20 @@
 
 ## Blockers:
 
-- Uninstall needs no code change, but it is worth confirming: it builds its plan
-  from the same `describeScaffold` (`src/commands/uninstall.ts:36`
+- ~~Uninstall needs no code change, but it is worth confirming: it builds its
+  plan from the same `describeScaffold` (`src/commands/uninstall.ts:36`
   → `buildPlan`), so the two skills become removable for free. If a test proves
-  otherwise, that discovery belongs in this item.
+  otherwise, that discovery belongs in this item.~~ Confirmed during
+  implementation: the assumption held, and `uninstall` needed no code change.
+  Pinned by three tests in `test/integration/uninstall.test.ts` — both skills are
+  planned `remove`, a full uninstall leaves no `.claude/skills` behind, and a
+  hand-edited `msg-brainstorm` is reported `kept — yours, remove by hand`.
+- Both audits in step 8 and step 9 came back as the predicted no-ops:
+  `templates/skills/msg-setup/SKILL.md` enumerates no skills individually, and
+  this repo's own `.claude/skills/` already held both folders.
+- Not done, deliberately: this repo's own `CLAUDE.md` msg-roadmap block was not
+  regenerated to match the updated `templates/project/claude-block.md`. No test
+  enforces it, so the repo's own docs now lag its templates — worth a follow-up.
 - Existing workspaces get the skill files back on re-init but still lack
   `requirementsFile`, so `msg-pre-roadmap` refuses to run
   (`templates/skills/msg-pre-roadmap/SKILL.md:12`). Item 10 closes that; until

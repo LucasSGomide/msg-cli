@@ -6,5 +6,5 @@ workspace's own documentation name the requirements step.
 
 | # | Task | Scope | Depends on | Criteria | Status |
 |---|---|---|---|---|---|
-| [01](01-register-the-two-skills.md) | Register the two skills and guard the drift | back-end | — | 0/8 | not-started |
-| [02](02-scaffolded-docs-name-the-step.md) | Scaffolded docs name the requirements step | back-end | 01 | 0/5 | not-started |
+| [01](01-register-the-two-skills.md) | Register the two skills and guard the drift | back-end | — | 8/8 | done |
+| [02](02-scaffolded-docs-name-the-step.md) | Scaffolded docs name the requirements step | back-end | 01 | 5/5 | done |
