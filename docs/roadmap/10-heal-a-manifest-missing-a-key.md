@@ -63,7 +63,12 @@
   `kept ... (yours)` report line both state plainly. The narrow scope (absent
   top-level keys only) is what keeps that promise true; if implementation finds
   it cannot stay that narrow, stop and re-plan rather than widening.
-- `readRecordedVersion` (`src/core/manifest.ts:103`) gates `uninstall` on an
+- ~~`readRecordedVersion` (`src/core/manifest.ts:103`) gates `uninstall` on an
   exact version match. Whether healing should also stamp `msg_version` is
   undecided and needs a call during the breakdown — writing it makes the
-  workspace claim a version that never wrote it.
+  workspace claim a version that never wrote it.~~ Resolved during the
+  breakdown: healing does **not** stamp `msg_version`. `readRecordedVersion`
+  treats a missing field as a mismatch on purpose, because the templates that
+  wrote the workspace are unknown; stamping the running version would forge that
+  provenance and let `uninstall` byte-compare against templates that never wrote
+  the files. `requirementsFile` is the only healed key.

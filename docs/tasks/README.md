@@ -5,4 +5,6 @@ slice, each with acceptance criteria that double as its tests.
 
 A folder lives only while the item is open. Items 01 and 02 are `done`.
 
-_No breakdown is open. Create one with `/msg-roadmap-task-breakdown NN`._
+| # | Roadmap item | Tasks | Progress | Status |
+|---|---|---|---|---|
+| [10](10-heal-a-manifest-missing-a-key/) | Heal a manifest missing a top-level key | 2 | 0/2 | not-started |
