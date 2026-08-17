@@ -16,11 +16,16 @@ permanent ID, never renumbered**. Ordering lives in this table only.
 - The prose above the table is hand-written and says **why** the next item is
   next. The table sorts by estimate; that sort is not a priority.
 
-**Next up: 03.** 02 landed the CQRS rewrite of the backend architecture doc, so
-the backend template is settled. 03 is the natural next pick — it is the
-frontend counterpart, and refining it now means the six remaining items are all
-being planned against settled architecture docs on both sides rather than
-against docs still in flux.
+**Next up: 09, then 10.** Both jump the template-refinement queue because the
+scaffold currently ships a broken pipeline: `msg-roadmap-plan-item` tells the
+user to run `/msg-pre-roadmap`, and that skill is not in `SKILLS`. Every day 09
+waits, `msg init` hands someone a dead end. 10 follows immediately — until a
+manifest missing `requirementsFile` can heal, 09 only fixes workspaces
+scaffolded after it lands.
+
+After those, 03 resumes the earlier plan: 02 settled the backend architecture
+doc, and 03 is its frontend counterpart, so refining it means the remaining
+template items are planned against settled docs on both sides.
 
 ## Ready
 
@@ -32,10 +37,13 @@ against docs still in flux.
 | [06](06-refine-frontend-stack-template.md) | Refine frontend stack template | 6 | — | not-started |
 | [07](07-refine-auth-template.md) | Refine auth template | 6 | — | not-started |
 | [04](04-refine-naming-conventions-template.md) | Refine naming conventions template | 5 | — | not-started |
+| [09](09-ship-the-pre-roadmap-skills.md) | Ship the pre-roadmap skills in the scaffold | 5 | — | not-started |
 
 ## Blocked
 
-_(none)_
+| # | Item | Est | Depends on | Status |
+|---|---|---|---|---|
+| [10](10-heal-a-manifest-missing-a-key.md) | Heal a manifest missing a top-level key | 6 | 09 | not-started |
 
 ## Parked
 
