@@ -93,3 +93,19 @@ a doc. Only the engine writes tables; prose and checkboxes are written by hand.
 - When the user asks you to tidy the history, use GitButler to squash commits, reword commits, and move changes between commits where appropriate.
 - Only tidy unpublished local history unless the user explicitly authorizes changing pushed or shared history.
 <!-- gitbutler-agent-setup:end -->
+
+## Branch-first for planning work
+
+Create a dedicated session branch — GitButler (`but branch new` / `but commit -b`)
+if it's set up in the repo, else plain git (`git checkout -b`) — **before**
+touching any file, whenever the work is:
+
+1. Executing a `docs/prompts/*.md` prompt file.
+2. Working on a roadmap item (`docs/roadmap/`, `docs/tasks/`).
+3. Creating a new roadmap item.
+
+Neither tool is mandatory; either satisfies the rule. This is enforced by a
+`PreToolUse` hook (see `.claude/settings.json`), not just this doc — an
+Edit/Write touching those paths without a session branch already created is
+blocked. Plain local edits outside these three cases don't require a branch
+first.
