@@ -38,35 +38,47 @@ test.
 
 ## The canonical request flow
 
-Every write endpoint looks like this. Deviating from it is a design decision, not
-a shortcut.
+Every endpoint looks like this. Deviating from it is a design decision, not a
+shortcut.
 
 ```
+write:
 request
   → request schema            shape and format only
-  → controller                validates, admits, calls ONE use case. No logic.
-  → use case                  repository.findX() → aggregate methods → repository.save()
-  → aggregate                 every invariant lives here
-  → repository.save()         upsert; maps domain → rows inside
-  → mapper                    domain → response shape
+  → controller                validates, admits, calls CommandBus.execute(). No logic.
+  → CommandBus.execute()       dispatches to the one command-handler for this command
+  → command-handler            repository.findX() → aggregate methods → repository.save()
+  → aggregate                  every invariant lives here
+  → repository.save()          upsert; maps domain → rows inside
+  → mapper                     domain → response shape
+  → response
+
+read:
+request
+  → request schema            shape and format only
+  → controller                validates, admits, calls QueryBus.execute(). No logic.
+  → QueryBus.execute()         dispatches to the one query-handler for this query
+  → query-handler              DAO → read model
   → response
 ```
 
 Rules:
 
-- One use case per file, one public method (`execute`).
+- One command/query pair per file, one command-handler/query-handler pair per
+  file. The controller injects `CommandBus` and `QueryBus`, never a handler
+  directly.
 - The controller's whole job is request validation, any entry-point-level
   permission check, and delegation. If a controller contains an `if` about domain
   state, it is in the wrong place.
-- **Never import a use case from another use case.** If two commands must run
-  together, that is a domain service — or, if it is genuinely asynchronous, a new
-  pattern to be agreed first.
+- **No handler calls another handler, directly or through the bus.** If two
+  commands must run together, that is a domain service — or, if it is genuinely
+  asynchronous, a new pattern to be agreed first.
 - Validation needing a database read (uniqueness, existence of a referenced row)
   cannot be decided from the aggregate's own state. Extract it into an injectable
-  validator in the write layer and inject it into the use case. **This is the
-  sanctioned place for a write path to touch a DAO.** The use case stays one
-  public method; the validator is independently testable and reusable.
-- A write use case may also read a DAO to hydrate data an aggregate needs but
+  validator in the write layer and inject it into the command-handler. **This is
+  the sanctioned place for a write path to touch a DAO.** The command-handler
+  stays one public method; the validator is independently testable and reusable.
+- A command-handler may also read a DAO to hydrate data an aggregate needs but
   does not own. Prefer not to: if the aggregate needs it to be correct, it
   usually belongs in the aggregate's own load.
 
@@ -79,7 +91,7 @@ not call another service.
 
 That narrow charter is the whole reason the name survives. A service that
 computes something for a single aggregate belongs in that aggregate, and one that
-just holds use-case code belongs in the use case.
+just holds handler code belongs in the handler.
 
 ## Read path (queries)
 
@@ -95,7 +107,7 @@ every client handle two shapes.
 
 **A controller may call a DAO directly when the call is a pure pass-through** —
 no composition, no shaping, no combining. The moment anything is derived from the
-result, a read use case appears and the controller stops seeing the DAO. This is
+result, a query-handler appears and the controller stops seeing the DAO. This is
 the one asymmetry with the write side, and it is deliberate: a class that only
 forwards a call is not a design, it is a file.
 
@@ -117,7 +129,7 @@ an architecture test rather than by review:
   grows one.
 - **Mapping in both directions is the repository's job.** Resolving what the
   aggregate carries onto rows is driven by what the aggregate carries, never by
-  ids passed in from the use case.
+  ids passed in from the handler.
 
 A row-writer keyed by a parent id (`saveX(parentId, rows)`) is the shape this rule
 exists to stop: it forces the caller to carry the ids and row shapes the aggregate
@@ -128,7 +140,7 @@ exemption.
 
 A transaction is **per request**, not per repository call. It is opened once at
 the entry-point, carried in ambient context, and resolved by repositories and
-DAOs from that context rather than from an injected handle — so no use case, no
+DAOs from that context rather than from an injected handle — so no handler, no
 repository signature and no test ever mentions a transaction.
 
 Entry-points without a request open their own, using the same helper. This is the
@@ -195,7 +207,7 @@ Hard rules:
 - **Mutators are intention-named and return `void`**: `close()`, `addMember()`,
   `changeMemberRole()`. Not `setEndedAt()`. Shared bookkeeping goes in a private
   `_touch()`; shared checks in a private `_validateX()`.
-- **Entities are mutated only through their aggregate.** A use case calls
+- **Entities are mutated only through their aggregate.** A command-handler calls
   `organization.updateMemberLastActivity(id)`, never `member.updateLastActivity()`.
   Mappers are the one exception — rebuilding stored state is exactly their job.
 - **Value objects expose meaning-named getters**, not a generic `.value`. A VO
@@ -228,7 +240,7 @@ Rules that still hold:
   response body.
 - `infrastructure/` never throws domain-meaningful errors. Catch the driver
   exception, log it with the query context, rethrow as an internal server error. A
-  unique-constraint violation surfacing as a `409` is the _use case's_ decision,
+  unique-constraint violation surfacing as a `409` is the _handler's_ decision,
   made from a prior read — not the repository's.
 - Every route declares its error responses, so the generated client knows the
   shape.
@@ -277,7 +289,7 @@ negotiating it:
 | Under test                                  | Tier        | How                                                                     |
 | ------------------------------------------- | ----------- | ----------------------------------------------------------------------- |
 | Aggregates, entities, value objects         | unit        | Own static factory, **no mocks at all**                                 |
-| Use cases                                   | unit        | Mocks bound to the real DI tokens — the test proves the wiring too      |
+| Command/query handlers                      | unit        | Mocks bound to the real DI tokens — the test proves the wiring too      |
 | Validators, domain services, mappers, utils | unit        | Plain construction                                                      |
 | Repositories, DAOs, adapters                | integration | Against a real database                                                 |
 | Controllers                                 | integration | Through the real application                                            |

@@ -46,3 +46,4 @@ _(none)_
 | # | Item | Est | Depends on | Status |
 |---|---|---|---|---|
 | [01](01-msg-uninstall-removes-the-scaffold.md) | `msg uninstall` removes the scaffold from a workspace | 6 | — | done |
+| [02](02-refine-backend-architecture-template.md) | Refine backend architecture template | 8 | — | done |

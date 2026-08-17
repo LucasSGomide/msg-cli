@@ -5,7 +5,7 @@ naming bug.
 
 ```
 character-level.vo.ts
-create-character.use-case.ts
+create-character.command.ts
 character.controller.ts
 create-character.dto.ts
 ```
@@ -13,7 +13,7 @@ create-character.dto.ts
 Tests sit next to the file they test and repeat its full name:
 
 ```
-create-character.use-case.test.ts                    unit
+create-character.command-handler.test.ts             unit
 character.drizzle.repository.integration.test.ts     integration (real DB / MSW)
 character.repository.mock.ts                         reusable mock factory (unit)
 character.repository.integration.mock.ts             seed helper (integration only)
@@ -41,7 +41,10 @@ has one.
 | DAO interface / impl (read side)                          | `.dao.ts`               |
 | Port — any other injectable contract                      | `.port.ts`              |
 | Adapter — the implementation of a port                    | `.adapter.ts`           |
-| Use case                                                  | `.use-case.ts`          |
+| Command (`CreateCharacterCommand`)                        | `.command.ts`           |
+| Command handler (`CreateCharacterCommandHandler`)         | `.command-handler.ts`   |
+| Query (`GetCharacterQuery`)                                | `.query.ts`             |
+| Query handler (`GetCharacterQueryHandler`)                | `.query-handler.ts`     |
 | Injectable pre-save check (needs a DB read)               | `.validator.ts`         |
 | Domain service — orchestrates two aggregates              | `.service.ts`           |
 | Controller                                                | `.controller.ts`        |
@@ -89,6 +92,7 @@ adding a new suffix.
 | `.harness.ts`   | fixed-name setup files     | See below.                                                |
 | `.fixture.json` | `.mock.ts` as typed code   | A committed JSON blob is untyped and unreviewable.        |
 | `.msw.mock.ts`  | `api/generated`            | Orval generates MSW handlers; see architecture-web.md.    |
+| `.use-case.ts`  | `.command.ts` + `.command-handler.ts` + `.query.ts` + `.query-handler.ts` | CQRS module adopted. |
 
 **Test bootstrap has no suffix.** It lives in a small, fixed set of files whose names are part of the
 standard, so a second one cannot be added by accident:
@@ -137,7 +141,7 @@ a blocker. Do not add a second one.
 - **Components and pages use `.tsx`**, not `.ts` — they contain JSX. The suffix is unchanged.
 - **Concrete implementations name their technology** and share the interface's base name, so the
   pair is obvious: `character.drizzle.repository.ts`, `capture.local.adapter.ts`.
-- **Class names mirror the file**: `create-character.use-case.ts` exports `CreateCharacterUseCase`.
+- **Class names mirror the file**: `create-character.command-handler.ts` exports `CreateCharacterCommandHandler`.
   Interfaces are not prefixed with `I` — `CharacterRepository` is the interface,
   `DrizzleCharacterRepository` the implementation.
 - **Lookup methods are always `find*` and always nullable.** `findById(): Promise<Capture | undefined>`,

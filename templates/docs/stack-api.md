@@ -16,6 +16,7 @@ library here should not require reopening that one.
 | API contract    | `@nestjs/swagger`                             | Generated from the code that serves it                                |
 | Tests           | Jest, `@testcontainers/postgresql`            | A real database for the integration tier                              |
 | Lint            | oxlint                                        | Fast enough to encode the dependency rule as import bans              |
+| CQRS dispatch   | `@nestjs/cqrs`                                | CommandBus / QueryBus decouple the controller from the handler; the seam future sagas and events plug into |
 
 Deployment is deliberately **not chosen yet** — see [Known gaps](#known-gaps).
 Auth is its own area: if this project has sessions and guards, `docs/auth.md`
@@ -26,8 +27,8 @@ holds them, and nothing in this doc assumes a caller has an identity.
 ```
 src/
   application/
-    read/                 query use cases      → depend on DAO interfaces
-    write/                command use cases    → depend on repository interfaces
+    command/               commands + command-handlers → depend on repository interfaces
+    query/                 queries + query-handlers     → depend on DAO interfaces
     dao/                  DAO interfaces (read contracts)
     port/                 every other injectable contract (*.port.ts)
   config/
@@ -67,7 +68,7 @@ overrides, and every violation names its gotcha in the error message:
 | Layer               | May not import                                                                               |
 | ------------------- | -------------------------------------------------------------------------------------------- |
 | `domain/**`         | Drizzle, `pg`, `config/database/**`, any other layer, any `@nestjs/*` except `@nestjs/common` |
-| `application/**`    | Drizzle, `pg`, `config/database/**`, `entry-point/**`, `infrastructure/**`, another use case  |
+| `application/**`    | Drizzle, `pg`, `config/database/**`, `entry-point/**`, `infrastructure/**`, another handler   |
 | `infrastructure/**` | `entry-point/**`                                                                              |
 
 `process.env` is a `no-restricted-properties` error everywhere except
@@ -179,7 +180,7 @@ Response DTOs are built by a `.mapper.ts` in `entry-point/http/mapper/`.
 
 ## Testing tooling
 
-- Jest, with `Test.createTestingModule` and `jest.Mocked` for the use-case tier.
+- Jest, with `Test.createTestingModule` and `jest.Mocked` for the command/query-handler tier.
 - Integration files are suffixed `.integration.test.ts` and share one
   `@testcontainers/postgresql` container per Jest worker via
   `config/database/integration-test.setup.ts`.
@@ -259,13 +260,14 @@ entities/aggregates live in `domain/` with no persistence awareness. Repositorie
 map between them (`*.mapper.ts`). Mapping code is cheap; a domain shaped by its
 tables is not.
 
-### 4. A use case never imports another use case
+### 4. A handler never calls another handler, directly or through the bus
 
 **Symptom:** transaction boundaries blur, one command silently triggers three
 others, tests need half the container.
 
-**Rule:** `application/**` files must not import from `application/read` or
-`application/write` siblings. If a flow needs multiple commands, that
+**Rule:** `application/**` files must not import from `application/command` or
+`application/query` siblings, and a handler must never dispatch another command
+or query through `CommandBus`/`QueryBus`. If a flow needs multiple commands, that
 orchestration is a **new pattern to be agreed first** (domain event, saga, or an
 explicit orchestrator layer) — do not improvise it inline.
 
