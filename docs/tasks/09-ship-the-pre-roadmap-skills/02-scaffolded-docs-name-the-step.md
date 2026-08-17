@@ -32,11 +32,22 @@
 
 ## Acceptance criteria
 
-- [ ] `(unit)` the rendered CLAUDE.md block names `docs/requirements.md`
-- [ ] `(unit)` the rendered CLAUDE.md block states that pre-roadmap runs before plan-item
-- [ ] `(integration)` `init` appends the block containing the requirements step to a fresh workspace
-- [ ] `(manual)` `templates/skills/msg-setup/SKILL.md` is confirmed not to enumerate skills individually, or is updated to include the two new ones
-- [ ] `(unit)` this repo's own `.claude/skills/` contains both `msg-pre-roadmap` and `msg-brainstorm`
+- [x] `(unit)` the rendered CLAUDE.md block names `docs/requirements.md`
+- [x] `(unit)` the rendered CLAUDE.md block states that pre-roadmap runs before plan-item
+- [x] `(integration)` `init` appends the block containing the requirements step to a fresh workspace
+- [x] `(manual)` `templates/skills/msg-setup/SKILL.md` is confirmed not to enumerate skills individually, or is updated to include the two new ones
+- [x] `(unit)` this repo's own `.claude/skills/` contains both `msg-pre-roadmap` and `msg-brainstorm`
+
+## Audit outcomes
+
+Both audits came back no-ops, as the task predicted:
+
+- `templates/skills/msg-setup/SKILL.md:34` lists `.claude/skills/` with the gloss
+  `these skills` and names none individually, so adding two skills leaves it
+  correct. Left unchanged.
+- This repo's own `.claude/skills/` already held `msg-pre-roadmap` and
+  `msg-brainstorm`; nothing to mirror. A unit test now pins that, so the folders
+  cannot quietly disappear.
 
 ## References
 

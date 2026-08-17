@@ -560,4 +560,16 @@ describe('init and the pre-roadmap skills', () => {
     expect(result.code).toBe(0);
     expect(listFiles(root)).toEqual([BRAINSTORM]);
   });
+
+  it('appends a CLAUDE.md block naming the requirements step', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    const claude = readFileSync(join(root, 'CLAUDE.md'), 'utf8');
+
+    expect(claude).toContain('docs/requirements.md');
+    expect(claude).toContain('/msg-pre-roadmap');
+    expect(claude.indexOf('/msg-pre-roadmap')).toBeLessThan(
+      claude.indexOf('/msg-roadmap-plan-item'),
+    );
+  });
 });

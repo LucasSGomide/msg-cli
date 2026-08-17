@@ -14,6 +14,13 @@ maps each area to the doc holding that area's rules. Read it before planning wor
 
 Numbers are permanent IDs. Nothing is ever renumbered or reused.
 
+**Requirements come first**
+
+`docs/requirements.md` is the append-only log of user needs and functional
+requirements, and a roadmap item has to trace back to one. Run
+`/msg-pre-roadmap` to record them there **before** `/msg-roadmap-plan-item`
+opens the item — plan-item stops on an idea with nothing recorded behind it.
+
 **Areas**
 
 {{areas}}

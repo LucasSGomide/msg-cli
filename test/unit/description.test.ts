@@ -5,7 +5,7 @@ import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { AreaSlug } from '../../src/core/areas';
-import { describeScaffold } from '../../src/core/description';
+import { CLAUDE_MARKERS, claudeBlock, describeScaffold } from '../../src/core/description';
 import { scaffold } from '../../src/core/scaffold';
 import { readProjectTemplate } from '../../src/core/templates';
 
@@ -103,5 +103,28 @@ describe('Makefile.block', () => {
 
   it('keeps the target createOrAppend tests for on re-run', () => {
     expect(block).toContain('roadmap-sync:');
+  });
+});
+
+// Roadmap item 09, task 02. The scaffolded workspace now ships the two
+// pre-roadmap skills; without this the agent has them and no written reason to
+// run either before opening a roadmap item.
+describe('the CLAUDE.md block and the requirements step', () => {
+  const block = claudeBlock(AREAS);
+
+  it('names docs/requirements.md', () => {
+    expect(block).toContain('docs/requirements.md');
+  });
+
+  it('states that pre-roadmap runs before plan-item', () => {
+    expect(block).toContain('/msg-pre-roadmap');
+    expect(block).toContain('/msg-roadmap-plan-item');
+    expect(block.indexOf('/msg-pre-roadmap')).toBeLessThan(block.indexOf('/msg-roadmap-plan-item'));
+    expect(block).toMatch(/before/);
+  });
+
+  it('still opens and closes with the markers uninstall cuts on', () => {
+    expect(block.trimStart().startsWith(CLAUDE_MARKERS[0])).toBe(true);
+    expect(block.trimEnd().endsWith(CLAUDE_MARKERS[1])).toBe(true);
   });
 });

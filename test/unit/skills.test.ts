@@ -118,6 +118,12 @@ describe("this repo's own skill copies", () => {
     expect(readFileSync(live, 'utf8')).toBe(skillText(skill));
   });
 
+  // Roadmap item 09, task 02: the two pre-roadmap skills have to exist here as
+  // folders, not only as names in SKILLS — msg-cli plans its own work with them.
+  it.each(['msg-pre-roadmap', 'msg-brainstorm'])('holds a %s folder of its own', (skill) => {
+    expect(existsSync(join(REPO, '.claude', 'skills', skill, 'SKILL.md'))).toBe(true);
+  });
+
   // msg-cli ran its own init, so it vendors the engine like any other project.
   // That copy is real and can go stale exactly the same way.
   it('vendors the same engine it ships', () => {
