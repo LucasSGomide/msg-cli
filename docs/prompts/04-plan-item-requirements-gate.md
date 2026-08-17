@@ -1,6 +1,6 @@
 # Goal: Gate `msg-roadmap-plan-item` on the feature having requirements recorded
 
-**Status:** not executed
+**Status:** executed on 2026-08-17
 **Rating:** —
 **Run:** sequential — depends on 01, 03
 

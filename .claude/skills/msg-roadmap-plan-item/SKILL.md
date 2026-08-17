@@ -33,19 +33,25 @@ compress.
 ## Flow
 
 1. **No argument?** Ask what the idea is. Nothing else happens first.
-2. **Ditched check.** Read the ditched and explorations READMEs (tables only). If
+2. **Requirements gate.** Read `docs/requirements.md` (or whatever
+   `requirementsFile` names in `project.yml`) and look for a row whose `Feature`
+   column matches the idea/feature name — case-insensitive, trimmed, exact
+   string match; no fuzzy matching. If no row matches, stop: tell the user to
+   run `/msg-pre-roadmap <feature name>` first, and do not proceed. This is a
+   hard gate — do not offer to continue without requirements.
+3. **Ditched check.** Read the ditched and explorations READMEs (tables only). If
    the idea matches a ditched doc or a `ruled out` verdict, open that doc, state
    the reason, and ask whether to proceed anyway. Stop if the answer is no.
-3. **Grill.** Invoke the `msg-grill-me` skill at `med` effort and verbosity
+4. **Grill.** Invoke the `msg-grill-me` skill at `med` effort and verbosity
    unless the user's own words already imply a level — relay their words rather
    than picking a level yourself. One question at a time, each with a
    recommended answer. Explore the repo instead of asking anything the repo can
    answer. Nothing is a hard gate — surface conflicts and let the user decide.
-4. **User experience grill**, only when the item touches the front end. See below.
-5. **Ask the outcome**, with a recommendation: **roadmap** · **exploration** ·
+5. **User experience grill**, only when the item touches the front end. See below.
+6. **Ask the outcome**, with a recommendation: **roadmap** · **exploration** ·
    **ditch**.
-6. **Write** per the template below, then run `make roadmap-sync`.
-7. **Check it is ready to break down** against the bar below. If it is not, fix
+7. **Write** per the template below, then run `make roadmap-sync`.
+8. **Check it is ready to break down** against the bar below. If it is not, fix
    the doc now — a thin item becomes a thin breakdown.
 
 Read only what the grill actually touches. `grep` the metadata headers to learn
