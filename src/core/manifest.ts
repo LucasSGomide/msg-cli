@@ -22,6 +22,24 @@ export const STRUCTURE: ReadonlyArray<readonly [string, string]> = [
  */
 export const REQUIREMENTS_FILE = 'docs/requirements.md';
 
+/**
+ * The top-level keys a manifest is expected to carry, and the value to heal in
+ * when one is absent. Declared once so a key added later heals without new code.
+ *
+ * `msg_version` is deliberately not here. `readRecordedVersion` treats a missing
+ * `msg_version` as a mismatch on purpose — the templates that wrote the
+ * workspace are unknown — and stamping the running version would forge that
+ * provenance, letting `uninstall` byte-compare against templates that never
+ * wrote the files.
+ *
+ * Nothing under `structure:` or `areas:` is healed either: a trimmed manifest
+ * may be deliberate, and filling it would turn healing into an opinion about
+ * someone's project.
+ */
+export const EXPECTED_TOP_LEVEL_KEYS: ReadonlyArray<readonly [string, string]> = [
+  ['requirementsFile', REQUIREMENTS_FILE],
+];
+
 const HEADER = `# Project manifest. The msg-roadmap skills read this and nothing else about
 # where things live — which is what makes them portable.
 #
@@ -58,14 +76,54 @@ export function addAreaLine(manifest: string, slug: AreaSlug): string | null {
 
   if (new RegExp(`^\\s+${escapeRegExp(area.label)}:`, 'm').test(manifest)) return null;
 
-  const match = /^areas:[^\n]*$/m.exec(manifest);
-  if (!match) {
+  const lines = manifest.split('\n');
+  const end = endOfAreasBlock(manifest, lines);
+  if (end === null) {
     throw new Error(`${MANIFEST}: no \`areas:\` block to add to`);
   }
 
-  // Walk to the end of the block: indented or blank lines belong to it, and a
-  // blank run at the end belongs to whatever follows.
+  lines.splice(end, 0, entry);
+  return lines.join('\n');
+}
+
+/**
+ * Append one absent top-level key, textually — the same reasoning as
+ * `addAreaLine`: the manifest is hand-edited and carries comments explaining
+ * what each area means, so it is never round-tripped through a parser. Nothing
+ * already in the file is re-serialised, reordered or removed.
+ *
+ * The key lands after the `areas:` block, which is where `renderManifest` puts
+ * the top-level keys it writes after `areas`.
+ *
+ * Returns null when there is nothing to do — the key is already present, or the
+ * manifest has no `areas:` block to anchor the append to and so is not one of
+ * ours to heal. Either way the caller reports a no-op rather than writing an
+ * identical file.
+ */
+export function addTopLevelKey(manifest: string, key: string, value: string): string | null {
+  if (new RegExp(`^${escapeRegExp(key)}:`, 'm').test(manifest)) return null;
+
   const lines = manifest.split('\n');
+  const end = endOfAreasBlock(manifest, lines);
+  if (end === null) return null;
+
+  // Exactly one line is added. `renderManifest` separates the block from the
+  // key with a blank line, so when the manifest already has that separator the
+  // key goes after it rather than a second one being introduced.
+  const at = lines[end]?.trim() === '' ? end + 1 : end;
+  lines.splice(at, 0, `${key}: ${value}`);
+  return lines.join('\n');
+}
+
+/**
+ * The line index just past the last entry of the `areas:` block, or null when
+ * there is no such block. Indented non-blank lines belong to it, and a blank
+ * run at the end belongs to whatever follows.
+ */
+function endOfAreasBlock(manifest: string, lines: readonly string[]): number | null {
+  const match = /^areas:[^\n]*$/m.exec(manifest);
+  if (!match) return null;
+
   const start = manifest.slice(0, match.index).split('\n').length; // 0-based index after `areas:`
   let end = start;
   for (let i = start; i < lines.length; i += 1) {
@@ -73,9 +131,7 @@ export function addAreaLine(manifest: string, slug: AreaSlug): string | null {
     if (/^[ \t]/.test(line) && line.trim() !== '') end = i + 1;
     else if (line.trim() !== '') break;
   }
-
-  lines.splice(end, 0, entry);
-  return lines.join('\n');
+  return end;
 }
 
 function escapeRegExp(value: string): string {

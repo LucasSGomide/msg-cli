@@ -38,13 +38,13 @@
 
 ## Acceptance criteria
 
-- [ ] `(unit)` a manifest with no `requirementsFile` gains exactly one line
-- [ ] `(unit)` the appended line lands after the `areas:` block, matching `renderManifest` ordering
-- [ ] `(unit)` every other byte of a commented, hand-edited manifest is identical after healing
-- [ ] `(unit)` a manifest that already carries the key returns `null`
-- [ ] `(unit)` a manifest missing a `structure:` entry is not filled in
-- [ ] `(unit)` a manifest missing an `areas:` entry is not filled in
-- [ ] `(unit)` the expected-key set contains `requirementsFile` and not `msg_version`
+- [x] `(unit)` a manifest with no `requirementsFile` gains exactly one line
+- [x] `(unit)` the appended line lands after the `areas:` block, matching `renderManifest` ordering
+- [x] `(unit)` every other byte of a commented, hand-edited manifest is identical after healing
+- [x] `(unit)` a manifest that already carries the key returns `null`
+- [x] `(unit)` a manifest missing a `structure:` entry is not filled in
+- [x] `(unit)` a manifest missing an `areas:` entry is not filled in
+- [x] `(unit)` the expected-key set contains `requirementsFile` and not `msg_version`
 
 ## References
 

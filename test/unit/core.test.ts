@@ -5,7 +5,13 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { AREA_SLUGS, parseAreas, UsageError } from '../../src/core/areas';
-import { addAreaLine, renderManifest } from '../../src/core/manifest';
+import {
+  addAreaLine,
+  addTopLevelKey,
+  EXPECTED_TOP_LEVEL_KEYS,
+  renderManifest,
+  REQUIREMENTS_FILE,
+} from '../../src/core/manifest';
 import { areasForShape, detectShape, SHAPE_NAMES, supportsAuth } from '../../src/core/shapes';
 
 const dirs: string[] = [];
@@ -161,5 +167,84 @@ describe('addAreaLine', () => {
 
   it('throws when there is no areas block', () => {
     expect(() => addAreaLine('msg_version: 1.0.0\n', 'design')).toThrow(/no `areas:` block/);
+  });
+});
+
+describe('addTopLevelKey', () => {
+  // A manifest written before `requirementsFile` existed: hand-edited, with its
+  // own comments, a trimmed `structure:` block and one area.
+  const legacy = [
+    '# Project manifest, hand-edited.',
+    '#',
+    '# Every entry under `areas` points at the doc holding that area rules.',
+    '',
+    'msg_version: 0.0.9',
+    '',
+    'structure:',
+    '  roadmap: docs/roadmap/',
+    '  tasks: docs/tasks/',
+    '',
+    'areas:',
+    '  # the only rule doc this project kept',
+    '  Naming: docs/naming.md',
+    '',
+    '# a trailing note',
+    '',
+  ].join('\n');
+
+  const heal = (manifest: string): string =>
+    addTopLevelKey(manifest, 'requirementsFile', REQUIREMENTS_FILE)!;
+
+  it('gains exactly one line', () => {
+    const healed = heal(legacy);
+    expect(healed.split('\n').length).toBe(legacy.split('\n').length + 1);
+    expect(healed).toContain(`requirementsFile: ${REQUIREMENTS_FILE}`);
+  });
+
+  it('lands after the areas block, matching renderManifest ordering', () => {
+    const healed = heal(legacy);
+    expect(healed.indexOf('requirementsFile:')).toBeGreaterThan(
+      healed.indexOf('  Naming: docs/naming.md'),
+    );
+    // The strongest statement of the ordering: strip the key out of a rendered
+    // manifest, heal it, and the bytes come back identical.
+    const rendered = renderManifest(['naming'], '1.0.0');
+    expect(heal(rendered.replace(/^requirementsFile:.*\n/m, ''))).toBe(rendered);
+  });
+
+  it('leaves every other byte of a commented, hand-edited manifest identical', () => {
+    const healed = heal(legacy);
+    expect(healed.replace(`requirementsFile: ${REQUIREMENTS_FILE}\n`, '')).toBe(legacy);
+  });
+
+  it('returns null when the manifest already carries the key', () => {
+    expect(addTopLevelKey(heal(legacy), 'requirementsFile', REQUIREMENTS_FILE)).toBeNull();
+  });
+
+  it('does not fill in a missing structure entry', () => {
+    const healed = heal(legacy);
+    expect(healed).not.toContain('explorations: docs/explorations/');
+    expect(healed).not.toContain('ditched: docs/ditched/');
+    expect(healed.slice(healed.indexOf('structure:'), healed.indexOf('areas:'))).toBe(
+      legacy.slice(legacy.indexOf('structure:'), legacy.indexOf('areas:')),
+    );
+  });
+
+  it('does not fill in a missing areas entry', () => {
+    const healed = heal(legacy);
+    expect(healed).not.toContain('Design: docs/design.md');
+    expect(healed.slice(healed.indexOf('areas:'), healed.indexOf('requirementsFile:'))).toBe(
+      legacy.slice(legacy.indexOf('areas:'), legacy.indexOf('# a trailing note')),
+    );
+  });
+});
+
+describe('EXPECTED_TOP_LEVEL_KEYS', () => {
+  it('carries requirementsFile', () => {
+    expect(EXPECTED_TOP_LEVEL_KEYS).toContainEqual(['requirementsFile', REQUIREMENTS_FILE]);
+  });
+
+  it('does not carry msg_version — healing must not forge a provenance', () => {
+    expect(EXPECTED_TOP_LEVEL_KEYS.map(([key]) => key)).not.toContain('msg_version');
   });
 });
