@@ -21,9 +21,11 @@ to keep `msg-roadmap-plan-item` simple and keep "gather requirements" as one
 flow's job, not two.
 
 This check is **per feature**, not per-project and not one-time: the
-`requirements.md` table's `Feature` column and per-feature `UN`/`FR` numbering
-(prompt 1) exist precisely so a feature planned a year after the project's first
-roadmap item still gets its own gate-check.
+`requirements.md` table's `Feature` column exists precisely so a feature
+planned a year after the project's first roadmap item still gets its own
+gate-check. (`UN`/`FR` numbering is scoped to the table's `Module` column, one
+umbrella level up from `Feature` — see `msg-pre-roadmap` — but the gate-check
+itself still matches on `Feature`, not `Module`.)
 
 This is **prompt 4 of 4**, depends on prompt 1 (the file and its format must
 exist) and prompt 3 (the skill it points users at must exist to be named

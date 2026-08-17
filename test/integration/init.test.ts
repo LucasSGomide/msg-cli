@@ -166,7 +166,7 @@ describe('init', () => {
     const requirements = readFileSync(join(root, 'docs/requirements.md'), 'utf8');
 
     expect(requirements).toContain(
-      '| Feature | User Need Code | User Need Details | Functional Requirement Code | Functional Requirement Details | Addition Date |',
+      '| Module | Feature | User Need Code | User Need Details | Functional Requirement Code | Functional Requirement Details | Addition Date |',
     );
     expect(requirements).not.toMatch(/\| UN\.\d/);
 

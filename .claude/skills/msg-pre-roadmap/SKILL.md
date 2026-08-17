@@ -19,14 +19,28 @@ user to run `npx @lucas-gomide/msg-cli init`. If `project.yml` has no
 Takes a feature name: `/msg-pre-roadmap <feature name>`. Bare invocation asks
 for the feature name before anything else.
 
+## Modules and features
+
+A **module** is the umbrella a feature belongs to — e.g. "Admin Management"
+holds the "Read Users", "Edit Users", and "Delete Users" features. `UN`/`FR`
+numbering is scoped to the **module**, not the feature: the first feature
+recorded under a module starts at `UN.1`, and every later feature added under
+that same module continues the count instead of restarting. Two different
+modules never share a number sequence.
+
 ## Flow
 
-1. **Brainstorm.** Invoke `msg-brainstorm` for the feature idea. Let it run at
+1. **Determine the module.** Read the requirements file (if it exists) and
+   check whether an existing `Module` value fits this feature. Ask the user
+   with one `AskUserQuestion` call: reuse the matching existing module
+   (recommended, when one plausibly fits), or name a new one. Never assume —
+   confirm even an obvious match.
+2. **Brainstorm.** Invoke `msg-brainstorm` for the feature idea. Let it run at
    its own stated defaults (`high` effort, `med` verbosity) — don't override.
-2. **Close gaps.** Invoke `msg-grill-me` at `high` effort / `med` verbosity,
+3. **Close gaps.** Invoke `msg-grill-me` at `high` effort / `med` verbosity,
    stated explicitly, to walk whatever branches the brainstorm surfaced. Stop
    once the project view for this feature is settled.
-3. **Offer research.** One `AskUserQuestion` call: research common
+4. **Offer research.** One `AskUserQuestion` call: research common
    frameworks/libraries, best practices, and pitfalls for this kind of
    feature, or skip straight to requirements. Mark a recommended option, but
    never default to yes without the user picking it — this step is genuinely
@@ -35,26 +49,30 @@ for the feature name before anything else.
      it uses `WebSearch`/`WebFetch`, has no back-and-forth with the user, and
      reports back a summary. It is not a reusable researcher; don't build it
      as one.
-   - If no: continue straight to step 4.
-4. **Write requirements.** This is the last step — no separate requirements
+   - If no: continue straight to step 5.
+5. **Write requirements.** This is the last step — no separate requirements
    skill. Refine the settled project view (plus research findings, if any)
    into user needs and functional requirements, and append them to the file
    named by `requirementsFile` in `project.yml` (default
    `docs/requirements.md`), following its table:
 
-   | Feature | User Need Code | User Need Details | Functional Requirement Code | Functional Requirement Details | Addition Date |
-   | ------- | --------------- | ------------------ | ---------------------------- | -------------------------------- | -------------- |
+   | Module | Feature | User Need Code | User Need Details | Functional Requirement Code | Functional Requirement Details | Addition Date |
+   | ------ | ------- | --------------- | ------------------ | ---------------------------- | -------------------------------- | -------------- |
 
+   - **Module** — the module settled in step 1, exactly as it already appears
+     in the table when reused.
    - **Feature** — the feature name, exactly as given (or settled during the
      brainstorm), used later for `msg-roadmap-plan-item`'s gate-check lookup.
-   - **User Need Code** — `UN.<n>`, restarting at `UN.1` for every feature.
+   - **User Need Code** — `UN.<n>`, scoped to the module (see above). Find the
+     highest existing `UN.<n>` for this module in the table and continue from
+     there; if the module is new, start at `UN.1`.
    - **Functional Requirement Code** — `FR.<un-number>.<sequence>`, nested
      under its user need. One need can have several requirements; a
      requirement names exactly one need.
    - **Addition Date** — today, `YYYY-MM-DD`.
    - One row per need or requirement. Never renumber or rewrite an existing
-     row for another feature — this file only grows.
-5. **Hand off.** Tell the user the feature now has requirements recorded and
+     row for another feature or module — this file only grows.
+6. **Hand off.** Tell the user the feature now has requirements recorded and
    that `msg-roadmap-plan-item` is the next step. Do not invoke it — the user
    decides when to move on.
 
