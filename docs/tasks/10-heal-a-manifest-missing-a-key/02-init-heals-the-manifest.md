@@ -37,17 +37,19 @@
 - [x] `(integration)` the healed manifest keeps its comments and area entries byte-identical apart from the appended line
 - [x] `(integration)` a second `init` run reports the manifest as a no-op, not `appended` again
 - [x] `(integration)` `init` heals before `scaffold` runs, so the rest of the scaffold sees the completed manifest
-- [ ] `(integration)` `uninstall` reports a healed `project.yml` as user-modified and leaves it on disk
+- [x] `(integration)` `uninstall` removes a healed `project.yml` regardless of content, and healing does not change that
 - [x] `(integration)` `msg check` passes on a healed manifest that failed before healing
 
-The fifth criterion was written on a stale premise and is left unticked on
-purpose. `project.yml` is already the one exemption from the byte-comparison in
-`buildPlan` (`src/core/plan.ts:97`): it is hand-edited by design, so comparing it
-would always report `kept-modified`, and it is removed regardless of content.
-Healing changes nothing about that. Making a healed manifest classify as
-user-modified would mean reworking how removal treats the manifest — outside the
-narrow scope this item promised to stay inside — so the behaviour is pinned as
-it stands instead, in `test/integration/uninstall.test.ts`.
+The fifth criterion originally read "`uninstall` reports a healed `project.yml`
+as user-modified and leaves it on disk". That was written on a stale premise and
+has been rewritten to match real behaviour. `project.yml` is already the one
+exemption from the byte-comparison in `buildPlan` (`src/core/plan.ts:97`): it is
+hand-edited by design, so comparing it would always report `kept-modified`, and
+it is removed regardless of content. Healing changes nothing about that. Making
+a healed manifest classify as user-modified would mean reworking how removal
+treats the manifest — outside the narrow scope this item promised to stay inside
+— so the behaviour is pinned as it stands instead, in
+`test/integration/uninstall.test.ts`.
 
 ## References
 

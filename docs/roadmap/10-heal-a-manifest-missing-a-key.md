@@ -1,6 +1,6 @@
 # 10 — Heal a manifest missing a top-level key
 
-**Depends on:** 09 · **Status:** not-started · **Estimate:** 6
+**Depends on:** 09 · **Status:** done · **Estimate:** 6
 
 ## Context
 
@@ -40,9 +40,16 @@
    and area entries byte-identical otherwise.
 7. Test: a manifest that already has the key is untouched and reported as kept.
 8. Test: `structure:` and `areas:` gaps are not filled.
-9. Test: `uninstall` reports a healed `project.yml` as user-modified and leaves
-   it on disk — it no longer byte-matches `renderManifest`, which is the
-   accepted outcome, not a bug.
+9. ~~Test: `uninstall` reports a healed `project.yml` as user-modified and
+   leaves it on disk — it no longer byte-matches `renderManifest`, which is the
+   accepted outcome, not a bug.~~ Corrected during implementation: the premise
+   was stale. `project.yml` is already the one exemption from the
+   byte-comparison in `buildPlan` (`src/core/plan.ts:97`) — it is hand-edited by
+   design, so it is classified `remove` with "hand-edited by design, removed
+   regardless" and never `kept-modified`. Healing changes nothing there, and
+   making it classify as user-modified would mean reworking how removal treats
+   the manifest, outside this item's promised scope. The actual behaviour is
+   pinned instead in `test/integration/uninstall.test.ts`.
 10. Confirm `msg check` passes on a healed manifest — it already validates
     `requirementsFile` (`src/commands/check.ts`).
 

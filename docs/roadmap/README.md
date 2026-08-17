@@ -37,13 +37,10 @@ template items are planned against settled docs on both sides.
 | [06](06-refine-frontend-stack-template.md) | Refine frontend stack template | 6 | — | not-started |
 | [07](07-refine-auth-template.md) | Refine auth template | 6 | — | not-started |
 | [04](04-refine-naming-conventions-template.md) | Refine naming conventions template | 5 | — | not-started |
-| [09](09-ship-the-pre-roadmap-skills.md) | Ship the pre-roadmap skills in the scaffold | 5 | — | not-started |
 
 ## Blocked
 
-| # | Item | Est | Depends on | Status |
-|---|---|---|---|---|
-| [10](10-heal-a-manifest-missing-a-key.md) | Heal a manifest missing a top-level key | 6 | 09 | not-started |
+_(none)_
 
 ## Parked
 
@@ -55,3 +52,5 @@ _(none)_
 |---|---|---|---|---|
 | [01](01-msg-uninstall-removes-the-scaffold.md) | `msg uninstall` removes the scaffold from a workspace | 6 | — | done |
 | [02](02-refine-backend-architecture-template.md) | Refine backend architecture template | 8 | — | done |
+| [09](09-ship-the-pre-roadmap-skills.md) | Ship the pre-roadmap skills in the scaffold | 5 | — | done |
+| [10](10-heal-a-manifest-missing-a-key.md) | Heal a manifest missing a top-level key | 6 | 09 | done |
