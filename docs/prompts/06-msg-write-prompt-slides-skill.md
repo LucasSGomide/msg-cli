@@ -1,7 +1,7 @@
 # Goal: Create a `msg-write-prompt-slides` skill that structures prompts for slide decks built with Claude Design
 
-**Status:** not executed
-**Rating:** —
+**Status:** executed on 2026-08-20
+**Rating:** 7
 
 ## Context
 
