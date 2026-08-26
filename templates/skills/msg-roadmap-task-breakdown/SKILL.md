@@ -73,7 +73,7 @@ missing implementation flow as a failure of test 2.
    Approve, or tell me what to merge / split / reorder.
    ```
 
-6. **On approval, write the task files and the folder README in one pass.** The
+7. **On approval, write the task files and the folder README in one pass.** The
    README is prose plus an empty table — heading row and separator only:
 
    ```markdown
@@ -85,7 +85,13 @@ missing implementation flow as a failure of test 2.
    | --- | ---- | ----- | ---------- | -------- | ------ |
    ```
 
-7. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
+8. **Invoke `/msg-wireframes` for every task whose `Scope` is `front-end` or
+   `full-stack`**, right after its file is written. It draws that slice's
+   screens into `docs/tasks/<item>/wireframes.md` from the task's `## User
+   experience` section — mirrors the User Experience grill already being
+   scoped to front-end items in `msg-roadmap-plan-item`. Skip it entirely for
+   an item with no UI-touching slice.
+9. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
    and moves the roadmap item to `in-progress` once a box is ticked. Never write a
    status or a table row by hand.
 

@@ -49,6 +49,7 @@ export const SKILLS = [
   'msg-pre-roadmap',
   'msg-roadmap-plan-item',
   'msg-roadmap-task-breakdown',
+  'msg-wireframes',
   'msg-roadmap-task-review',
   'msg-roadmap-sync',
   'msg-brainstorm',

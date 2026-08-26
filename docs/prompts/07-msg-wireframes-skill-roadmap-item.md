@@ -1,6 +1,6 @@
-# Goal: Add a roadmap item for a new `msg-wireframes` skill
+# Goal: Build the `msg-wireframes` skill and ship it through the CLI scaffolding
 
-**Status:** not executed — msg-cli stopped self-hosting its roadmap/requirements structure (2026-08-26; that framework now only applies to projects scaffolded by `msg init`), so this prompt's original deliverable (a roadmap item added via `msg-roadmap-plan-item`) no longer applies as written. Revisit before running.
+**Status:** executed on 2026-08-26 — deliverable changed from "add a roadmap item" to building the skill directly, since msg-cli no longer self-hosts a roadmap/requirements structure. Built the skill, wired it into `msg-roadmap-task-breakdown`, and added it to `SKILLS`.
 **Rating:** —
 
 ## Context
@@ -14,9 +14,10 @@ touches the front end. It writes ASCII wireframes for the item's screens into
 `docs/tasks/<item>/wireframes.md`, with the relevant `docs/design.md` rules
 quoted next to each one.
 
-This prompt's deliverable is the roadmap item itself, added via
-`msg-roadmap-plan-item` — not the skill. The skill's actual build is a later
-task breakdown of that item.
+This prompt originally scoped its deliverable to a roadmap item added via
+`msg-roadmap-plan-item`, leaving the skill's build for a later task breakdown.
+That structure no longer exists for msg-cli's own work, so the deliverable is
+the skill build itself, direct: the constraints below already fully specify it.
 
 ## Constraints
 
@@ -45,10 +46,26 @@ task breakdown of that item.
 8. `test/unit/skills.test.ts` already asserts `SKILLS` against the folders
    under `templates/skills/`; the new skill's folder must keep that
    assertion passing.
+9. `msg uninstall` must remove the skill from a project that scaffolded it.
+   No bespoke removal code is needed for this: `describeScaffold` already
+   loops every entry in `SKILLS` unconditionally, so adding
+   `msg-wireframes` there is sufficient — verified by
+   `test/integration/init.test.ts`'s full scaffolded-tree assertion and by
+   running `uninstall --dry-run` against a scaffolded project.
+10. More generally: if wiring this skill (or any future one) ever requires
+    writing into a scaffolded project's `.claude/settings.json` or
+    `.claude/hooks/`, that write must be described as a `ScaffoldEntry` the
+    same way skills and docs are, so `uninstall` removes it through the same
+    generic mechanism rather than a special-cased removal path. As built,
+    `msg-wireframes` needs neither — it is invoked the same way
+    `msg-grill-me` is, by another skill's own instructions — so there is
+    nothing there yet for uninstall to track. Building that machinery now,
+    with no concrete write to drive its shape, was left undone rather than
+    added speculatively.
 
 ## Output
 
-A new roadmap item in `docs/roadmap/`, created via `msg-roadmap-plan-item`
-and grilled the normal way for that skill — dependencies, estimate, Key
-Areas, User Experience. This prompt only fixes the scope; it doesn't
-pre-write the roadmap doc's shape.
+The skill itself: `templates/skills/msg-wireframes/SKILL.md`, added to
+`SKILLS` in `src/core/templates.ts`, and a new step in
+`msg-roadmap-task-breakdown`'s `SKILL.md` invoking it for every task slice
+whose `Scope` is `front-end` or `full-stack`.
