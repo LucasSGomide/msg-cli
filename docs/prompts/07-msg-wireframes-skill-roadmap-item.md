@@ -1,6 +1,6 @@
 # Goal: Add a roadmap item for a new `msg-wireframes` skill
 
-**Status:** not executed
+**Status:** not executed — msg-cli stopped self-hosting its roadmap/requirements structure (2026-08-26; that framework now only applies to projects scaffolded by `msg init`), so this prompt's original deliverable (a roadmap item added via `msg-roadmap-plan-item`) no longer applies as written. Revisit before running.
 **Rating:** —
 
 ## Context

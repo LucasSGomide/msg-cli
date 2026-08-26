@@ -1,18 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  ENGINE_SRC,
-  parsePortableSkills,
-  PORTABLE_SKILLS,
-  SKILLS,
-  SKILLS_DIR,
-} from '../../src/core/templates';
-
-const REPO = fileURLToPath(new URL('../..', import.meta.url));
+import { parsePortableSkills, PORTABLE_SKILLS, SKILLS, SKILLS_DIR } from '../../src/core/templates';
 
 const skillText = (skill: string) => readFileSync(join(SKILLS_DIR, skill, 'SKILL.md'), 'utf8');
 
@@ -105,31 +96,6 @@ describe('the skill payload', () => {
       expect(text, skill).toContain('traceable to a');
       expect(text, skill).toContain('concrete action on a concrete thing');
     }
-  });
-});
-
-describe("this repo's own skill copies", () => {
-  // .claude/skills/ is the live copy used while developing msg-cli itself.
-  // templates/skills/ is what ships. Two copies of the same prose drift the
-  // moment one is edited alone, and nothing else would notice.
-  it.each(SKILLS)('%s matches the template', (skill) => {
-    const live = join(REPO, '.claude', 'skills', skill, 'SKILL.md');
-    expect(existsSync(live), `${live} is missing`).toBe(true);
-    expect(readFileSync(live, 'utf8')).toBe(skillText(skill));
-  });
-
-  // Roadmap item 09, task 02: the two pre-roadmap skills have to exist here as
-  // folders, not only as names in SKILLS — msg-cli plans its own work with them.
-  it.each(['msg-pre-roadmap', 'msg-brainstorm'])('holds a %s folder of its own', (skill) => {
-    expect(existsSync(join(REPO, '.claude', 'skills', skill, 'SKILL.md'))).toBe(true);
-  });
-
-  // msg-cli ran its own init, so it vendors the engine like any other project.
-  // That copy is real and can go stale exactly the same way.
-  it('vendors the same engine it ships', () => {
-    const vendored = join(REPO, 'scripts', 'roadmap-sync.mjs');
-    expect(existsSync(vendored), `${vendored} is missing — re-run \`msg init\``).toBe(true);
-    expect(readFileSync(vendored, 'utf8')).toBe(readFileSync(ENGINE_SRC, 'utf8'));
   });
 });
 
