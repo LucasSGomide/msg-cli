@@ -77,6 +77,7 @@ describe('init', () => {
       '.claude/skills/msg-roadmap-task-breakdown/SKILL.md',
       '.claude/skills/msg-roadmap-task-review/SKILL.md',
       '.claude/skills/msg-setup/SKILL.md',
+      '.claude/skills/msg-write-prompt-slides/SKILL.md',
       '.claude/skills/msg-write-prompt/SKILL.md',
       'CLAUDE.md',
       'Makefile',

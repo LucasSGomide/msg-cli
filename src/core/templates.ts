@@ -51,6 +51,7 @@ export const SKILLS = [
   'msg-brainstorm',
   'msg-grill-me',
   'msg-write-prompt',
+  'msg-write-prompt-slides',
 ] as const;
 
 /**
@@ -59,7 +60,12 @@ export const SKILLS = [
  * own, without the rest of the planning workflow — see `msg init --shape
  * skills-only`.
  */
-export const PORTABLE_SKILLS = ['msg-brainstorm', 'msg-grill-me', 'msg-write-prompt'] as const;
+export const PORTABLE_SKILLS = [
+  'msg-brainstorm',
+  'msg-grill-me',
+  'msg-write-prompt',
+  'msg-write-prompt-slides',
+] as const;
 
 export type PortableSkill = (typeof PORTABLE_SKILLS)[number];
 
