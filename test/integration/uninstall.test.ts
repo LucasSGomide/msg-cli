@@ -84,7 +84,8 @@ describe('classifyBlock, against a real init', () => {
       ['Makefile', makefile],
       ['CLAUDE.md', claude],
     ] as const) {
-      const entry = described.find((candidate) => candidate.path === path)!;
+      const entry = described.find((candidate) => candidate.path === path);
+      if (entry?.kind !== 'appended') throw new Error(`${path} is not an appended entry`);
       const result = classifyBlock(root, entry);
       expect(result.outcome, path).toBe('strip');
       expect(result.content, path).toBe(before);
@@ -338,6 +339,62 @@ describe('uninstall, against a --shape skills-only scaffold', () => {
     expect(result.code).toBe(1);
     expect(result.err.join('\n')).toContain('no project.yml');
     expect(listFiles(root)).toEqual(['CLAUDE.md']);
+  });
+});
+
+describe('uninstall and the branch-guard hook', () => {
+  const SETTINGS = '.claude/settings.json';
+  const HOOK_PRE = '.claude/hooks/branch-guard-pre.sh';
+  const HOOK_POST = '.claude/hooks/branch-guard-post.sh';
+
+  it('removes a freshly created settings.json and both hook scripts', async () => {
+    const root = await scaffolded();
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(existsSync(join(root, SETTINGS))).toBe(false);
+    expect(existsSync(join(root, HOOK_PRE))).toBe(false);
+    expect(existsSync(join(root, HOOK_POST))).toBe(false);
+  });
+
+  it('ships the hook scripts executable', async () => {
+    const root = await scaffolded();
+
+    expect(statSync(join(root, HOOK_PRE)).mode & 0o111).not.toBe(0);
+    expect(statSync(join(root, HOOK_POST)).mode & 0o111).not.toBe(0);
+  });
+
+  it('merges into a settings.json the project already owns, and strips only its own entries back out', async () => {
+    const root = project();
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    writeFileSync(
+      join(root, SETTINGS),
+      JSON.stringify({ permissions: { allow: ['Bash(npm test)'] } }, null, 2),
+      'utf8',
+    );
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    const afterInit = JSON.parse(readFileSync(join(root, SETTINGS), 'utf8'));
+    expect(afterInit.permissions).toEqual({ allow: ['Bash(npm test)'] });
+    expect(afterInit.hooks.PreToolUse).toBeDefined();
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.out.join('\n')).toContain(`strip   ${SETTINGS}`);
+    const afterUninstall = JSON.parse(readFileSync(join(root, SETTINGS), 'utf8'));
+    expect(afterUninstall).toEqual({ permissions: { allow: ['Bash(npm test)'] } });
+    expect(existsSync(join(root, HOOK_PRE))).toBe(false);
+  });
+
+  it('leaves settings.json alone once the project has removed our hook entries', async () => {
+    const root = await scaffolded();
+    writeFileSync(join(root, SETTINGS), JSON.stringify({ permissions: {} }, null, 2), 'utf8');
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.out.join('\n')).not.toContain(SETTINGS);
+    expect(existsSync(join(root, SETTINGS))).toBe(true);
   });
 });
 

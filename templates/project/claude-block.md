@@ -34,4 +34,20 @@ opens the item — plan-item stops on an idea with nothing recorded behind it.
 Run the sync after ticking an acceptance criterion, changing a status, or adding
 a doc. Only the engine writes tables; prose and checkboxes are written by hand.
 
+**Branch-first for planning work**
+
+Create a dedicated session branch — GitButler (`but branch new` / `but commit -b`)
+if it's set up in the repo, else plain git (`git checkout -b`) — **before**
+touching any file, whenever the work is:
+
+1. Executing a `docs/prompts/*.md` prompt file.
+2. Working on a roadmap item (`docs/roadmap/`, `docs/tasks/`).
+3. Creating a new roadmap item.
+
+Neither tool is mandatory; either satisfies the rule. This is enforced by a
+`PreToolUse` hook (see `.claude/settings.json`), not just this doc — an
+Edit/Write touching those paths without a session branch already created is
+blocked. Plain local edits outside these three cases don't require a branch
+first.
+
 <!-- msg-roadmap:end -->

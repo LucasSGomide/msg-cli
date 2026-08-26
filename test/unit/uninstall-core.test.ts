@@ -11,6 +11,7 @@ import {
   MAKEFILE_MARKERS,
   claudeBlock,
   describeScaffold,
+  type ScaffoldEntry,
 } from '../../src/core/description';
 import {
   manifestAreas,
@@ -34,11 +35,17 @@ function write(root: string, path: string, content: string): void {
   writeFileSync(join(root, path), content, 'utf8');
 }
 
-function entryFor(path: string, areas: Parameters<typeof renderManifest>[0] = ['design']) {
+function entryFor(
+  path: string,
+  areas: Parameters<typeof renderManifest>[0] = ['design'],
+): Extract<ScaffoldEntry, { kind: 'file' | 'copied' }> {
   const entry = describeScaffold({ areas, seed: false, version: VERSION }).find(
     (candidate) => candidate.path === path,
   );
   if (!entry) throw new Error(`no described entry for ${path}`);
+  if (entry.kind !== 'file' && entry.kind !== 'copied') {
+    throw new Error(`${path} is not a file/copied entry`);
+  }
   return entry;
 }
 

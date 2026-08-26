@@ -10,6 +10,7 @@ import {
   type ScaffoldEntry,
 } from './description';
 import { MANIFEST, manifestAreas, readRecordedVersion, versionMismatchMessage } from './manifest';
+import { stripBranchGuardHooks } from './settingsJson';
 import { PORTABLE_SKILLS } from './templates';
 
 export interface PlanEntry {
@@ -64,7 +65,13 @@ export function buildPlan(root: string, running: string): PlanResult {
 
   // Directories `init` created. `scripts/` is deliberately absent: projects keep
   // their own scripts there, so it stays even when it ends up empty.
-  const candidates = new Set<string>(['docs', '.claude', '.claude/skills', ...PLANNING_FOLDERS]);
+  const candidates = new Set<string>([
+    'docs',
+    '.claude',
+    '.claude/skills',
+    '.claude/hooks',
+    ...PLANNING_FOLDERS,
+  ]);
   const { folders, warnings } = pruneFolders(root, entries, candidates);
 
   return { ok: true, plan: { entries, folders, warnings } };
@@ -152,6 +159,15 @@ function plan(root: string, entry: ScaffoldEntry): PlanEntry {
 
   if (entry.kind === 'appended') {
     const { outcome, content } = classifyBlock(root, entry);
+    return outcome === 'strip'
+      ? { path: entry.path, outcome, content }
+      : { path: entry.path, outcome };
+  }
+
+  if (entry.kind === 'settings-hook') {
+    const full = join(root, entry.path);
+    if (!existsSync(full)) return { path: entry.path, outcome: 'absent' };
+    const { outcome, content } = stripBranchGuardHooks(readFileSync(full, 'utf8'));
     return outcome === 'strip'
       ? { path: entry.path, outcome, content }
       : { path: entry.path, outcome };

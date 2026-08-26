@@ -55,7 +55,10 @@ export function stripBlock(
 }
 
 /** Classify an appended-block entry against the file on disk. */
-export function classifyBlock(root: string, entry: ScaffoldEntry): StripResult {
+export function classifyBlock(
+  root: string,
+  entry: Extract<ScaffoldEntry, { kind: 'appended' }>,
+): StripResult {
   const path = join(root, entry.path);
   if (!existsSync(path)) return { outcome: 'absent', content: '' };
 

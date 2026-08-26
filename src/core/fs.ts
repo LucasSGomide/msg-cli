@@ -1,5 +1,6 @@
 import {
   appendFileSync,
+  chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
@@ -7,6 +8,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, relative } from 'node:path';
+
+import { mergeBranchGuardHooks } from './settingsJson';
 
 /**
  * What a scaffolding run did, one entry per path it touched. `kept` is not a
@@ -43,15 +46,38 @@ export class Recorder {
     return true;
   }
 
-  copyIfAbsent(from: string, to: string): boolean {
+  copyIfAbsent(from: string, to: string, options?: { readonly executable?: boolean }): boolean {
     if (existsSync(to)) {
       this.record(to, 'kept');
       return false;
     }
     mkdirSync(dirname(to), { recursive: true });
     copyFileSync(from, to);
+    // A hook script needs its own +x — copyFileSync carries content, not mode,
+    // and neither git nor npm packaging reliably keeps the executable bit
+    // through every checkout/install path.
+    if (options?.executable) chmodSync(to, 0o755);
     this.record(to, 'created');
     return true;
+  }
+
+  /**
+   * Merge the branch-guard hook entries into `.claude/settings.json`,
+   * creating the file when absent. A structural merge, not a whole-file
+   * write — see `mergeBranchGuardHooks` for what "changed" means here.
+   */
+  mergeHooks(path: string): void {
+    const existed = existsSync(path);
+    const { text, changed, skipped } = mergeBranchGuardHooks(
+      existed ? readFileSync(path, 'utf8') : null,
+    );
+    if (skipped || !changed) {
+      this.record(path, 'kept');
+      return;
+    }
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, text, 'utf8');
+    this.record(path, existed ? 'appended' : 'created');
   }
 
   /**

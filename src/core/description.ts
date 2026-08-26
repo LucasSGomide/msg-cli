@@ -3,14 +3,24 @@ import { join } from 'node:path';
 
 import { AREAS, type AreaSlug } from './areas';
 import { MANIFEST, REQUIREMENTS_FILE, renderManifest } from './manifest';
-import { ENGINE_SRC, SKILLS, SKILLS_DIR, readDocTemplate, readProjectTemplate } from './templates';
+import {
+  BRANCH_GUARD_POST_SRC,
+  BRANCH_GUARD_PRE_SRC,
+  ENGINE_SRC,
+  SKILLS,
+  SKILLS_DIR,
+  readDocTemplate,
+  readProjectTemplate,
+} from './templates';
 
 /**
  * How an entry got onto disk, because removal treats each differently: a whole
- * file is deleted, an appended block is cut out of a file the project owns, and
- * a copied file is compared against its source rather than a rendered template.
+ * file is deleted, an appended block is cut out of a file the project owns, a
+ * copied file is compared against its source rather than a rendered template,
+ * and a settings-hook entry is merged into and pulled back out of a JSON file
+ * structurally rather than by byte content.
  */
-export type EntryKind = 'file' | 'appended' | 'copied';
+export type EntryKind = 'file' | 'appended' | 'copied' | 'settings-hook';
 
 interface BaseEntry {
   /** Relative to the project root, always with forward slashes. */
@@ -25,8 +35,16 @@ interface BaseEntry {
 
 export type ScaffoldEntry =
   | (BaseEntry & { readonly kind: 'file' })
-  | (BaseEntry & { readonly kind: 'copied'; readonly source: string })
-  | (BaseEntry & { readonly kind: 'appended'; readonly marker: string });
+  | (BaseEntry & {
+      readonly kind: 'copied';
+      readonly source: string;
+      readonly executable?: boolean;
+    })
+  | (BaseEntry & { readonly kind: 'appended'; readonly marker: string })
+  | { readonly path: string; readonly kind: 'settings-hook' };
+
+/** Where the branch-guard hook scripts land in a scaffolded project. */
+export const SETTINGS_FILE = '.claude/settings.json';
 
 export interface DescriptionOptions {
   readonly areas: readonly AreaSlug[];
@@ -95,20 +113,38 @@ export function describeScaffold(options: DescriptionOptions): readonly Scaffold
     candidates: [claudeBlock(areas)],
   });
 
+  entries.push({
+    path: '.claude/hooks/branch-guard-pre.sh',
+    kind: 'copied',
+    source: BRANCH_GUARD_PRE_SRC,
+    executable: true,
+    candidates: [readFileSync(BRANCH_GUARD_PRE_SRC, 'utf8')],
+  });
+  entries.push({
+    path: '.claude/hooks/branch-guard-post.sh',
+    kind: 'copied',
+    source: BRANCH_GUARD_POST_SRC,
+    executable: true,
+    candidates: [readFileSync(BRANCH_GUARD_POST_SRC, 'utf8')],
+  });
+  entries.push({ path: SETTINGS_FILE, kind: 'settings-hook' });
+
   for (const skill of SKILLS) entries.push(skillEntry(skill));
 
   return entries;
 }
 
+type CopiedEntry = Extract<ScaffoldEntry, { kind: 'copied' }>;
+
 /**
  * What `msg init --shape skills-only` writes: just the picked skills, none of
  * the roadmap scaffold above.
  */
-export function describeSkills(skills: readonly string[]): readonly ScaffoldEntry[] {
+export function describeSkills(skills: readonly string[]): readonly CopiedEntry[] {
   return skills.map(skillEntry);
 }
 
-function skillEntry(skill: string): ScaffoldEntry {
+function skillEntry(skill: string): CopiedEntry {
   const source = join(SKILLS_DIR, skill, 'SKILL.md');
   return {
     path: `.claude/skills/${skill}/SKILL.md`,

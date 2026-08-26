@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { AreaSlug } from '../../src/core/areas';
 import { CLAUDE_MARKERS, claudeBlock, describeScaffold } from '../../src/core/description';
 import { scaffold } from '../../src/core/scaffold';
+import { mergeBranchGuardHooks } from '../../src/core/settingsJson';
 import { readProjectTemplate } from '../../src/core/templates';
 
 const VERSION = '9.9.9';
@@ -52,7 +53,7 @@ describe('describeScaffold', () => {
     const entries = describeScaffold({ areas: AREAS, seed: false, version: VERSION });
 
     const kinds = new Set(entries.map((entry) => entry.kind));
-    expect(kinds).toEqual(new Set(['file', 'copied', 'appended']));
+    expect(kinds).toEqual(new Set(['file', 'copied', 'appended', 'settings-hook']));
     expect(entries.filter((entry) => entry.kind === 'appended').map((entry) => entry.path)).toEqual(
       ['Makefile', 'CLAUDE.md'],
     );
@@ -64,6 +65,13 @@ describe('describeScaffold', () => {
 
     for (const entry of describeScaffold({ areas: AREAS, seed, version: VERSION })) {
       const written = readFileSync(join(root, entry.path), 'utf8');
+      if (entry.kind === 'settings-hook') {
+        // Merged, not templated: there is no single candidate body to compare
+        // against, so this just asserts the write is the branch-guard entries
+        // and nothing else — the merge itself is covered in settingsJson.test.ts.
+        expect(written, entry.path).toBe(mergeBranchGuardHooks(null).text);
+        continue;
+      }
       // Both blocks land in files that did not exist, so createOrAppend wrote
       // the block with its leading newlines stripped.
       const expected =
@@ -76,8 +84,14 @@ describe('describeScaffold', () => {
     const seeded = describeScaffold({ areas: ['design'], seed: true, version: VERSION });
     const stubbed = describeScaffold({ areas: ['design'], seed: false, version: VERSION });
 
-    const fromSeeded = seeded.find((entry) => entry.path === 'docs/design.md')!;
-    const fromStub = stubbed.find((entry) => entry.path === 'docs/design.md')!;
+    const fromSeeded = seeded.find((entry) => entry.path === 'docs/design.md') as Extract<
+      (typeof seeded)[number],
+      { kind: 'file' }
+    >;
+    const fromStub = stubbed.find((entry) => entry.path === 'docs/design.md') as Extract<
+      (typeof stubbed)[number],
+      { kind: 'file' }
+    >;
 
     expect(fromSeeded.candidates).toHaveLength(2);
     expect([...fromSeeded.candidates].sort()).toEqual([...fromStub.candidates].sort());

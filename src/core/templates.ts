@@ -31,6 +31,9 @@ export const SKILLS_DIR = join(TEMPLATES, 'skills');
 export const DOCS_DIR = join(TEMPLATES, 'docs');
 export const PROJECT_DIR = join(TEMPLATES, 'project');
 export const ENGINE_SRC = join(TEMPLATES, 'scripts', 'roadmap-sync.mjs');
+export const HOOKS_DIR = join(TEMPLATES, 'hooks');
+export const BRANCH_GUARD_PRE_SRC = join(HOOKS_DIR, 'branch-guard-pre.sh');
+export const BRANCH_GUARD_POST_SRC = join(HOOKS_DIR, 'branch-guard-post.sh');
 
 /**
  * The skills a scaffolded project gets, in pipeline order. msg-grill-me and

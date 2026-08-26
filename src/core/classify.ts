@@ -21,7 +21,10 @@ export type Outcome = 'remove' | 'strip' | 'kept-modified' | 'absent';
  * Line endings are normalised first, the same way `check` does it, so a
  * workspace checked out with CRLF is not reported wholesale as modified.
  */
-export function classifyFile(root: string, entry: ScaffoldEntry): Outcome {
+export function classifyFile(
+  root: string,
+  entry: Extract<ScaffoldEntry, { kind: 'file' | 'copied' }>,
+): Outcome {
   const path = join(root, entry.path);
   if (!existsSync(path)) return 'absent';
 
