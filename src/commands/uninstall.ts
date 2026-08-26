@@ -1,8 +1,7 @@
-import { existsSync, rmSync, rmdirSync, writeFileSync } from 'node:fs';
+import { rmSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { UsageError } from '../core/areas';
-import { MANIFEST } from '../core/manifest';
 import { buildPlan, type Plan } from '../core/plan';
 import { askUninstall, isInteractive } from '../prompts';
 
@@ -27,11 +26,6 @@ export async function uninstall(flags: UninstallFlags, version: string): Promise
   const out: string[] = [];
   const err: string[] = [];
   const root = resolve(flags.root ?? '.');
-
-  if (!existsSync(join(root, MANIFEST))) {
-    err.push(`error: no ${MANIFEST} — run \`msg init\``);
-    return { code: 1, out, err };
-  }
 
   const result = buildPlan(root, version);
   if (!result.ok) {

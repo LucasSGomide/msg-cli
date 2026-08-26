@@ -304,6 +304,43 @@ describe('uninstall', () => {
   });
 });
 
+describe('uninstall, against a --shape skills-only scaffold', () => {
+  const WRITE_PROMPT = '.claude/skills/msg-write-prompt/SKILL.md';
+
+  it('removes it even though it wrote no project.yml', async () => {
+    const root = project();
+    await init({ root, shape: 'skills-only', skills: 'msg-write-prompt' }, VERSION);
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(existsSync(join(root, WRITE_PROMPT))).toBe(false);
+    expect(listFiles(root)).toEqual([]);
+  });
+
+  it('keeps a hand-edited skill and says whose it is', async () => {
+    const root = project();
+    await init({ root, shape: 'skills-only', skills: 'msg-write-prompt' }, VERSION);
+    writeFileSync(join(root, WRITE_PROMPT), '# Mine now\n', 'utf8');
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.out.join('\n')).toContain(`kept    ${WRITE_PROMPT} — yours, remove by hand`);
+    expect(existsSync(join(root, WRITE_PROMPT))).toBe(true);
+  });
+
+  it('still errors cleanly when nothing was scaffolded at all', async () => {
+    const root = project();
+    writeFileSync(join(root, 'CLAUDE.md'), '# Mine\n', 'utf8');
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(1);
+    expect(result.err.join('\n')).toContain('no project.yml');
+    expect(listFiles(root)).toEqual(['CLAUDE.md']);
+  });
+});
+
 // Roadmap item 09 assumed uninstall needs no code change, because it builds its
 // plan from the same describeScaffold that init writes from. These tests are
 // what turns that assumption into a fact.
