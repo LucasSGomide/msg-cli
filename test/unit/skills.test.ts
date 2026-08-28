@@ -104,10 +104,10 @@ describe('parsePortableSkills', () => {
     expect(parsePortableSkills('msg-brainstorm')).toEqual(['msg-brainstorm']);
   });
 
-  it('enumerates all four portable names when one is unknown', () => {
+  it('enumerates all five portable names when one is unknown', () => {
     expect(() => parsePortableSkills('msg-setup')).toThrow(
-      /Known: msg-brainstorm, msg-grill-me, msg-write-prompt, msg-write-prompt-slides/,
+      /Known: msg-brainstorm, msg-grill-me, msg-write-prompt, msg-write-prompt-slides, msg-commit/,
     );
-    expect(PORTABLE_SKILLS).toHaveLength(4);
+    expect(PORTABLE_SKILLS).toHaveLength(5);
   });
 });

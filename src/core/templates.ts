@@ -56,6 +56,7 @@ export const SKILLS = [
   'msg-grill-me',
   'msg-write-prompt',
   'msg-write-prompt-slides',
+  'msg-commit',
 ] as const;
 
 /**
@@ -69,6 +70,7 @@ export const PORTABLE_SKILLS = [
   'msg-grill-me',
   'msg-write-prompt',
   'msg-write-prompt-slides',
+  'msg-commit',
 ] as const;
 
 export type PortableSkill = (typeof PORTABLE_SKILLS)[number];
