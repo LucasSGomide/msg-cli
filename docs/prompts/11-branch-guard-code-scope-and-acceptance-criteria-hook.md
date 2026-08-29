@@ -1,7 +1,7 @@
 # Goal: Re-scope the scaffolded branch-guard hook to code edits, and add a hook that blocks landing an implementation with unticked acceptance criteria
 
 **Status:** executed on 2026-08-29
-**Rating:** —
+**Rating:** 9
 
 ## Context
 
