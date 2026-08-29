@@ -69,6 +69,7 @@ describe('init', () => {
 
     expect(result.code).toBe(0);
     expect(listFiles(root)).toEqual([
+      '.claude/hooks/acceptance-criteria-gate.sh',
       '.claude/hooks/branch-guard-post.sh',
       '.claude/hooks/branch-guard-pre.sh',
       '.claude/settings.json',

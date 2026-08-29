@@ -4,6 +4,7 @@ import { mergeBranchGuardHooks, stripBranchGuardHooks } from '../../src/core/set
 
 const PRE = '"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-guard-pre.sh"';
 const POST = '"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-guard-post.sh"';
+const GATE = '"$CLAUDE_PROJECT_DIR/.claude/hooks/acceptance-criteria-gate.sh"';
 
 describe('mergeBranchGuardHooks', () => {
   it('creates the file from nothing', () => {
@@ -14,9 +15,32 @@ describe('mergeBranchGuardHooks', () => {
     const parsed = JSON.parse(result.text);
     expect(parsed.hooks.PreToolUse).toEqual([
       { matcher: 'Write|Edit|MultiEdit', hooks: [{ type: 'command', command: PRE }] },
+      { matcher: 'Bash', hooks: [{ type: 'command', command: GATE }] },
     ]);
     expect(parsed.hooks.PostToolUse).toEqual([
       { matcher: 'Bash', hooks: [{ type: 'command', command: POST }] },
+    ]);
+  });
+
+  it('puts the acceptance gate in its own PreToolUse/Bash group, not the Write group', () => {
+    const parsed = JSON.parse(mergeBranchGuardHooks(null).text);
+
+    const bash = parsed.hooks.PreToolUse.find((g: { matcher: string }) => g.matcher === 'Bash');
+    expect(bash.hooks).toEqual([{ type: 'command', command: GATE }]);
+  });
+
+  it('joins a PreToolUse/Bash group the project already owns rather than replacing it', () => {
+    const existing = JSON.stringify({
+      hooks: {
+        PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: '"./theirs.sh"' }] }],
+      },
+    });
+
+    const parsed = JSON.parse(mergeBranchGuardHooks(existing).text);
+    const bash = parsed.hooks.PreToolUse.find((g: { matcher: string }) => g.matcher === 'Bash');
+    expect(bash.hooks).toEqual([
+      { type: 'command', command: '"./theirs.sh"' },
+      { type: 'command', command: GATE },
     ]);
   });
 
@@ -44,8 +68,15 @@ describe('mergeBranchGuardHooks', () => {
 
     expect(result.changed).toBe(true);
     const parsed = JSON.parse(result.text);
-    expect(parsed.hooks.PreToolUse).toHaveLength(1);
-    expect(parsed.hooks.PreToolUse[0].hooks).toEqual([
+    const writeGroup = parsed.hooks.PreToolUse.find(
+      (g: { matcher: string }) => g.matcher === 'Write|Edit|MultiEdit',
+    );
+    expect(
+      parsed.hooks.PreToolUse.filter(
+        (g: { matcher: string }) => g.matcher === 'Write|Edit|MultiEdit',
+      ),
+    ).toHaveLength(1);
+    expect(writeGroup.hooks).toEqual([
       { type: 'command', command: '"./other-hook.sh"' },
       { type: 'command', command: PRE },
     ]);
@@ -110,6 +141,31 @@ describe('stripBranchGuardHooks', () => {
       { matcher: 'Write|Edit|MultiEdit', hooks: [{ type: 'command', command: '"./mine.sh"' }] },
     ]);
     expect(parsed.hooks.PostToolUse).toBeUndefined();
+  });
+
+  it('pulls the acceptance gate back out, keeping a Bash hook the project owns', () => {
+    const installed = mergeBranchGuardHooks(
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: '"./theirs.sh"' }] }],
+        },
+      }),
+    ).text;
+
+    const result = stripBranchGuardHooks(installed);
+
+    expect(result.outcome).toBe('strip');
+    const parsed = JSON.parse(result.content);
+    expect(parsed.hooks.PreToolUse).toEqual([
+      { matcher: 'Bash', hooks: [{ type: 'command', command: '"./theirs.sh"' }] },
+    ]);
+  });
+
+  it('removes all three entries when the file held only ours, gate included', () => {
+    const installed = mergeBranchGuardHooks(null).text;
+    expect(installed).toContain('acceptance-criteria-gate.sh');
+
+    expect(stripBranchGuardHooks(installed)).toEqual({ outcome: 'remove', content: '' });
   });
 
   it('reports absent when the file has neither entry', () => {

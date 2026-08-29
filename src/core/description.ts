@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { AREAS, type AreaSlug } from './areas';
 import { MANIFEST, REQUIREMENTS_FILE, renderManifest } from './manifest';
 import {
+  ACCEPTANCE_GATE_SRC,
   BRANCH_GUARD_POST_SRC,
   BRANCH_GUARD_PRE_SRC,
   ENGINE_SRC,
@@ -126,6 +127,13 @@ export function describeScaffold(options: DescriptionOptions): readonly Scaffold
     source: BRANCH_GUARD_POST_SRC,
     executable: true,
     candidates: [readFileSync(BRANCH_GUARD_POST_SRC, 'utf8')],
+  });
+  entries.push({
+    path: '.claude/hooks/acceptance-criteria-gate.sh',
+    kind: 'copied',
+    source: ACCEPTANCE_GATE_SRC,
+    executable: true,
+    candidates: [readFileSync(ACCEPTANCE_GATE_SRC, 'utf8')],
   });
   entries.push({ path: SETTINGS_FILE, kind: 'settings-hook' });
 

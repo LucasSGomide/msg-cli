@@ -2,7 +2,7 @@
 # PostToolUse: once this session runs a branch-creating command — GitButler
 # (`but branch new` / `but commit -b`) or plain git (`git checkout -b` /
 # `git switch -c`) — mark the branch-guard flag so branch-guard-pre.sh stops
-# blocking planning edits. Neither tool is mandatory; either satisfies the gate.
+# blocking code edits. Neither tool is mandatory; either satisfies the gate.
 set -euo pipefail
 
 input=$(cat)

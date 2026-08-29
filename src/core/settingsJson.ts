@@ -21,7 +21,17 @@ interface SettingsShape {
   [key: string]: unknown;
 }
 
-/** The one hook msg-cli installs today. A second one generalises this list. */
+/**
+ * Every hook entry msg-cli installs. The merge and strip below iterate this
+ * list, so adding a row here is all it takes to ship another hook: a new
+ * `(event, matcher)` pair becomes its own matcher group, and a row sharing an
+ * existing pair joins that group's `hooks` array.
+ *
+ *  - branch-guard-pre  — block code edits until the session has a branch
+ *  - branch-guard-post — set the "branch exists" flag branch-guard-pre reads
+ *  - acceptance-criteria-gate — block a land/merge while task acceptance
+ *    criteria are still unticked
+ */
 const BRANCH_GUARD: ReadonlyArray<{
   readonly event: string;
   readonly matcher: string;
@@ -36,6 +46,11 @@ const BRANCH_GUARD: ReadonlyArray<{
     event: 'PostToolUse',
     matcher: 'Bash',
     command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-guard-post.sh"',
+  },
+  {
+    event: 'PreToolUse',
+    matcher: 'Bash',
+    command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/acceptance-criteria-gate.sh"',
   },
 ];
 

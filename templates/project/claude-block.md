@@ -34,20 +34,27 @@ opens the item — plan-item stops on an idea with nothing recorded behind it.
 Run the sync after ticking an acceptance criterion, changing a status, or adding
 a doc. Only the engine writes tables; prose and checkboxes are written by hand.
 
-**Branch-first for planning work**
+**Branch-first for implementation work**
 
 Create a dedicated session branch — GitButler (`but branch new` / `but commit -b`)
-if it's set up in the repo, else plain git (`git checkout -b`) — **before**
-touching any file, whenever the work is:
+if it's set up in the repo, else plain git (`git checkout -b`) — **before the
+first code edit** of an implementation. Code means application source, libraries,
+tests, and build/manifest/config files: `src/`, `lib/`, `app/`, `test/`,
+`tests/`, `*.config.*`, `package.json` and lockfiles, `Makefile`.
 
-1. Executing a `docs/prompts/*.md` prompt file.
-2. Working on a roadmap item (`docs/roadmap/`, `docs/tasks/`).
-3. Creating a new roadmap item.
+Neither tool is mandatory; either satisfies the rule. A `PreToolUse` hook (see
+`.claude/settings.json`) enforces it — a Write/Edit touching code without a
+session branch already created is blocked. Documentation and planning edits
+(prompt files, roadmap docs, task breakdowns) don't need a branch first; create
+one only when you specifically want to.
 
-Neither tool is mandatory; either satisfies the rule. This is enforced by a
-`PreToolUse` hook (see `.claude/settings.json`), not just this doc — an
-Edit/Write touching those paths without a session branch already created is
-blocked. Plain local edits outside these three cases don't require a branch
-first.
+**Acceptance criteria before landing**
+
+A second `PreToolUse` hook gates the ship moment: `but land`, a `git merge`, or a
+`git push` aimed at the target branch is blocked while any task file under
+`docs/tasks/*/` still has an unticked box beneath its `## Acceptance criteria`
+heading. The engine derives item status from those boxes, so tick them and run
+`make roadmap-sync` before landing. Routine `but commit` / `git commit` are never
+blocked.
 
 <!-- msg-roadmap:end -->

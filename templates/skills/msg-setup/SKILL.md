@@ -31,8 +31,9 @@ docs/requirements.md               append-only log of user needs and functional 
 scripts/roadmap-sync.mjs           the engine, vendored
 Makefile                           roadmap-sync and roadmap-check targets
 CLAUDE.md                          a delimited msg-roadmap block
-.claude/hooks/branch-guard-*.sh    blocks planning-file edits until this session has a branch
-.claude/settings.json              the two hooks above, merged into whatever the project already has
+.claude/hooks/branch-guard-*.sh    blocks code edits until this session has a branch
+.claude/hooks/acceptance-criteria-gate.sh  blocks a land/merge while task acceptance criteria are unticked
+.claude/settings.json              the hooks above, merged into whatever the project already has
 .claude/skills/                    these skills
 ```
 
