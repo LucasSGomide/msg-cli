@@ -87,13 +87,20 @@ missing implementation flow as a failure of test 2.
 
 8. **Invoke `/msg-wireframes` for every task whose `Scope` is `front-end` or
    `full-stack`**, right after its file is written. It draws that slice's
-   screens into `docs/tasks/<item>/wireframes.md` from the task's `## User
+   screens into the task file's own `## Wireframes` section from its `## User
    experience` section — mirrors the User Experience grill already being
    scoped to front-end items in `msg-roadmap-plan-item`. Skip it entirely for
    an item with no UI-touching slice.
-9. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
-   and moves the roadmap item to `in-progress` once a box is ticked. Never write a
-   status or a table row by hand.
+9. **Invoke `/msg-sequence-diagrams` for every task whose `Scope` is `back-end`
+   or `full-stack` that adds or changes an API endpoint**, right after its file
+   is written. It draws each endpoint into the task file's own `## Sequence
+   diagrams` section from its `## Technical details` section. The trigger is the
+   endpoint, not the scope: a slice that only touches migrations, seeders,
+   mappers or an internal refactor has no request flow to draw, and gets
+   nothing.
+10. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
+    and moves the roadmap item to `in-progress` once a box is ticked. Never write
+    a status or a table row by hand.
 
 ## Slicing rules
 
@@ -126,7 +133,7 @@ never renumbered, never reused**, same rule as roadmap numbers. Filename is
 
 ### Template
 
-```markdown
+````markdown
 # MM — Title
 
 **Roadmap:** [NN](../../roadmap/NN-roadmap-slug.md) · **Scope:** back-end · **Depends on:** 01, 02
@@ -140,10 +147,40 @@ never renumbered, never reused**, same rule as roadmap numbers. Filename is
 - **Flow** — …
 - **States** — …
 
+## Wireframes
+
+**Screen:** …
+
+```
++--------------------+
+| ASCII layout       |
++--------------------+
+```
+
+**Design rules**
+
+- Rule N — …
+
 ## Technical details
 
 - **Database** — …
 - **Back-end** — …
+
+## Sequence diagrams
+
+**Endpoint:** `POST /thing`
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as ThingController
+    C->>API: POST /thing {…}
+    API-->>C: 201 Created {id}
+```
+
+**Architecture rules**
+
+- Rule N — …
 
 ## Acceptance criteria
 
@@ -157,7 +194,7 @@ never renumbered, never reused**, same rule as roadmap numbers. Filename is
 ## Implement with
 
 `/api-feature`
-```
+````
 
 **Header fields**
 
@@ -180,9 +217,17 @@ never renumbered, never reused**, same rule as roadmap numbers. Filename is
   `**New pattern**`), keeping only what this slice renders. Copy verbatim where
   possible. The parent is not read at implementation time, so a bullet left out is
   a screen detail nobody sees again.
+- **Wireframes** — **required when `Scope` is `front-end` or `full-stack`,
+  omitted otherwise.** Written by `/msg-wireframes`, not by hand: ASCII screens
+  drawn from this slice's `## User experience` bullets, each with the design
+  rules it obeys.
 - **Technical details** — copied from the parent's bullets, keeping only what this
   slice needs, same `**Area**` prefixes. The legal set is the keys under `areas`
   in `project.yml`.
+- **Sequence diagrams** — **required when the slice adds or changes an API
+  endpoint, omitted otherwise** — including for a `back-end` slice that adds no
+  endpoint. Written by `/msg-sequence-diagrams`, not by hand: one mermaid
+  `sequenceDiagram` per endpoint, each with the architecture rules it obeys.
 - **References** — the parent's Technical References that bear on this slice, plus
   the rule docs the scope implies. A `front-end` slice always cites the Design doc.
 - **Implement with** — the skill that does the work.

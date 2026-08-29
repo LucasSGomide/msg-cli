@@ -60,6 +60,14 @@ breakdown is lost.
 - Same for **Technical References** — each must be cited by the task it bears on.
 - A bullet reworded into something weaker or ambiguous is a gap; restore the
   parent's wording.
+- A task whose Technical details add or change an **API endpoint** and that has
+  no `## Sequence diagrams` section is a gap — the request path was left to be
+  re-derived at implementation time. Fill it with `/msg-sequence-diagrams`.
+  A slice that only touches migrations, seeders, mappers or an internal refactor
+  needs no diagram; a `back-end` task carrying a diagram for an endpoint it does
+  not touch is a gap the other way.
+- A diagram with no **Architecture rules** list under it is a gap — restore the
+  rule numbers from the `back-end` area's doc.
 
 ### 2. User experience coverage
 
@@ -73,6 +81,11 @@ Only when the parent has a `## User Experience:` section.
 - A `**Pattern**` bullet that lost its citation on the way down is a gap — restore
   the design-doc rule number or `file:line`.
 - A `back-end` task carrying a UX section is a gap the other way. Remove it.
+- A `front-end` or `full-stack` task with **no** `## Wireframes` section is a
+  gap. Fill it with `/msg-wireframes` from that task's UX bullets. A `back-end`
+  task carrying a `## Wireframes` section is a gap the other way — remove it.
+- A wireframe with no **Design rules** list under it is a gap — restore the rule
+  numbers from the Design doc.
 
 If the parent has a `**Front-end**` bullet but **no** UX section at all, that is
 the breakdown skill's backfill step having been skipped. Say so and stop — writing
@@ -125,6 +138,8 @@ Reviewed 04-capture-ingestion — 6 tasks, 4 gaps applied, 1 not applied.
 
   fidelity   03  "fx events keyed by effect id" was dropped from the parent
   ux         05  front-end task had no User experience section
+  ux         06  front-end task had no Wireframes section
+  fidelity   04  POST /captures had no Sequence diagrams section
   criteria   05  two criteria had no test level → (e2e)
   missing    07  new task: capture deletion — parent commits to it, no task covered it
 
@@ -141,6 +156,8 @@ If nothing is found, say so in one line.
 - Apply first, report after. Never present findings for approval.
 - Only stop to ask when a rule above says so: criteria over cap, folder over 8
   tasks, a missing parent UX section, or a bare invocation with several folders.
-- Never edit a task file that has a ticked box.
+- Never edit a task file that has a ticked box — that includes adding a missing
+  `## Wireframes` or `## Sequence diagrams` section. Report it under **Not
+  applied**.
 - Never renumber, delete, or merge a task.
 - Never invent scope the roadmap item does not commit to.

@@ -1,15 +1,19 @@
 ---
 name: msg-wireframes
-description: Draw ASCII wireframes for a roadmap item's UI-touching task slices, each paired with the design rules that apply. Use when a task slice's Scope is front-end or full-stack during task breakdown, or when asked to wireframe a screen.
+description: Draw ASCII wireframes for a task slice's UI-touching screens into the task file, each paired with the design rules that apply. Use when a task slice's Scope is front-end or full-stack during task breakdown, or when asked to wireframe a screen.
 ---
 
-# Wireframe a roadmap item's screens
+# Wireframe a task slice's screens
 
 A UI-touching task slice gets prose only today, so whoever implements it
 guesses at layout. This skill closes that gap: it draws the slice's screens as
 ASCII art and cites the exact `docs/design.md` rules each one has to follow,
 so the wireframe and the rule sit next to each other instead of in two
 documents nobody cross-checks.
+
+The wireframe goes into the task file itself, under `## Wireframes`. The task
+file is the whole brief — an agent implementing a slice should never have to
+open a second document to see the screen it is building.
 
 This skill never decides UX. It draws what `msg-roadmap-task-breakdown` already
 wrote in a task's `## User experience` section — if that section is thin, the
@@ -27,11 +31,11 @@ Read `project.yml` for the tasks folder and the `design` area's rule doc.
 - **No `project.yml`, or the item's `docs/tasks/<item>/` folder doesn't
   exist yet** — this isn't a msg-cli planning workspace, or the item hasn't
   been broken down. Do not fail. Write to (or update) `wireframes.md` at the
-  repo root instead of `docs/tasks/<item>/wireframes.md`, using `docs/design.md`
-  at the repo root as the rule doc if it exists, and say once that this is the
-  standalone fallback.
-- **Otherwise** write to `docs/tasks/<item>/wireframes.md` and read the rule
-  doc `project.yml`'s `design` area names.
+  repo root instead of a task file section, using `docs/design.md` at the repo
+  root as the rule doc if it exists, and say once that this is the standalone
+  fallback.
+- **Otherwise** write into the task file's `## Wireframes` section and read the
+  rule doc `project.yml`'s `design` area names.
 
 ## Flow
 
@@ -50,21 +54,25 @@ Read `project.yml` for the tasks folder and the `design` area's rule doc.
    bullets call for. Merge minor variants of the same layout (e.g. "loading"
    and "filled" that differ only in row count) into one block with a note
    instead of two near-identical boxes.
-5. **Write or update the file.** One `## MM — Task slice title` section per
-   task slice, holding its wireframe(s) and a **Design rules** list right
-   under each one. A section already in the file for a slice this pass
-   doesn't touch stays untouched; a section for a slice this pass does cover
-   is replaced whole. Never remove a sibling slice's section.
+5. **Write or update the section.** Add `## Wireframes` to the task file right
+   after `## User experience`, or replace it whole if it is already there.
+   Touch no other section of the file.
+
+## The write barrier
+
+A task file with **any** `- [x]` acceptance criterion has work against it. Do
+not edit it: report that the slice needs a wireframe and that it must be added
+by hand, the same barrier `msg-roadmap-task-review` applies.
+
+Ticked checkboxes are sacred — no path through this skill removes or rewrites
+one, and no path through it touches a section other than `## Wireframes`.
 
 ## Format
 
-One file per roadmap item, one section per task slice, added or updated as
-breakdown proceeds:
+One section per task file, one `**Screen:**` block per distinct layout:
 
 ````markdown
-# NN — Roadmap item title — Wireframes
-
-## MM — Task slice title
+## Wireframes
 
 **Screen:** Character list — empty state
 
@@ -100,8 +108,8 @@ breakdown proceeds:
 - Rule 24 — row actions stay in the trailing column, never a hover-only reveal
 ````
 
-Fallback mode (no `docs/tasks/`) uses the same section shape without the
-roadmap-item title line.
+Fallback mode (no `docs/tasks/`) uses the same block shape in a standalone
+`wireframes.md`, one `## MM — Task slice title` heading per slice.
 
 ## Rules
 
@@ -115,4 +123,5 @@ roadmap-item title line.
 - Never invent a screen, state, or flow step the task's User experience
   section doesn't already have. If the section is missing entirely, say so
   and stop rather than guessing a layout.
-- One file per roadmap item. Never a separate file per task slice.
+- One section per task file. Never a separate wireframes file next to a task
+  folder.

@@ -81,6 +81,7 @@ describe('init', () => {
       '.claude/skills/msg-roadmap-sync/SKILL.md',
       '.claude/skills/msg-roadmap-task-breakdown/SKILL.md',
       '.claude/skills/msg-roadmap-task-review/SKILL.md',
+      '.claude/skills/msg-sequence-diagrams/SKILL.md',
       '.claude/skills/msg-setup/SKILL.md',
       '.claude/skills/msg-wireframes/SKILL.md',
       '.claude/skills/msg-write-prompt-slides/SKILL.md',

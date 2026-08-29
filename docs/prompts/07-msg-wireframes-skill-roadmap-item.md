@@ -32,7 +32,9 @@ the skill build itself, direct: the constraints below already fully specify it.
 3. Output file: `docs/tasks/<item>/wireframes.md`, one file per roadmap item
    covering every task slice. Each UI-touching task slice gets its own
    section inside it, added or updated as breakdown proceeds — not a separate
-   file per slice.
+   file per slice. **Superseded by prompt 12** (2026-08-29): the wireframe now
+   lives in the task file's own `## Wireframes` section, and the per-item
+   `wireframes.md` is written only in the standalone fallback.
 4. Wireframes are ASCII art.
 5. Ships to every project scaffolded by `msg init` — added to `SKILLS` in
    `src/core/templates.ts` and to `templates/skills/` — but is **not** added
