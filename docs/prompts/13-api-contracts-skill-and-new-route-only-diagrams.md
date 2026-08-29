@@ -1,7 +1,7 @@
 # Goal: Narrow sequence diagrams to new routes only, and add a `msg-api-contracts` skill that writes an `openapi.json` into the task folder for every endpoint a slice adds or changes
 
 **Status:** executed on 2026-08-29
-**Rating:** —
+**Rating:** 10
 
 ## Context
 
