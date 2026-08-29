@@ -1,19 +1,25 @@
 ---
 name: msg-sequence-diagrams
-description: Draw mermaid sequence diagrams for the API endpoints a task slice adds or changes, each paired with the architecture rules that apply. Use during task breakdown when a back-end or full-stack slice adds an endpoint, or when asked to diagram a request flow.
+description: Draw mermaid sequence diagrams for the new API routes a task slice adds, each paired with the architecture rules that apply. Use during task breakdown when a back-end or full-stack slice adds a route the application doesn't serve yet, or when asked to diagram a request flow.
 ---
 
-# Diagram a task slice's endpoints
+# Diagram a task slice's new routes
 
-A slice that adds an API endpoint describes it in prose, so the request path —
-who calls what, in what order, what comes back, what fails — is re-derived by
-whoever implements it. This skill closes that gap: it draws the endpoint as a
+A slice that adds a **new** API route describes it in prose, so the request path
+— who calls what, in what order, what comes back, what fails — is re-derived by
+whoever implements it. This skill closes that gap: it draws the route as a
 mermaid `sequenceDiagram` and cites the exact architecture rules the flow has to
 follow, so the diagram and the rule sit next to each other instead of in two
 documents nobody cross-checks.
 
 It is the back-end counterpart of `msg-wireframes`, and it works the same way:
 the diagram goes into the task file itself, under `## Sequence diagrams`.
+
+It is **not** the skill for a contract change. When the route already exists and
+only its payload, response, status codes or auth move, the flow is unchanged and
+a diagram redraws what the codebase already answers. That slice gets an OpenAPI
+contract from `msg-api-contracts` instead — which fires for every endpoint a
+slice adds or changes, new route or not.
 
 This skill never designs the endpoint. It draws what
 `msg-roadmap-task-breakdown` already wrote in a task's `## Technical details`
@@ -23,20 +29,34 @@ task-breakdown problem, not this skill's to fix.
 Invocation: `/msg-sequence-diagrams <item>` for one item's pending slices, or
 invoked automatically by `msg-roadmap-task-breakdown` right after it writes a
 task whose `Scope` is `back-end` or `full-stack` **and** whose Technical details
-add or change an API endpoint. Bare, ask which item and slice.
+add a new API route. Bare, ask which item and slice.
 
 ## When it applies
 
-The trigger is the endpoint, not the scope. A `back-end` or `full-stack` slice
-qualifies only when its `## Technical details` describe a **new or changed API
-endpoint** — a route added, a payload or response changed, a status code or
-auth rule altered.
+The trigger is a **new route** — a path + method combination the application
+does not serve yet. A `back-end` or `full-stack` slice qualifies only when its
+`## Technical details` add one.
+
+A slice that only **changes** an existing route — its payload, its response, a
+status code, an auth or validation rule — gets **no** diagram. The participants
+and the order of calls are already in the codebase; only the contract moved, and
+that is `msg-api-contracts`' job. Say so in one line and move on.
 
 A slice that only touches migrations, seeders, mappers, config or an internal
-refactor gets no diagram. Say so in one line and stop; do not draw the internal
-call graph of a slice with no request crossing the boundary.
+refactor gets no diagram either. Do not draw the internal call graph of a slice
+with no request crossing the boundary.
 
-One diagram per endpoint the slice adds or changes.
+Deciding whether a route is new is a **read, not a guess**:
+
+- the slice's `## Technical details` wording — "add `POST /characters`" is new,
+  "add `avatarUrl` to `POST /characters`" is not;
+- the item's existing `docs/tasks/<item>/openapi.json` — a path + method already
+  in it was contracted by an earlier slice;
+- the codebase's routes.
+
+When it is genuinely ambiguous after those three, **ask rather than draw**.
+
+One diagram per new route the slice adds.
 
 ## Locate context
 
@@ -57,18 +77,18 @@ which is only the default.
 
 1. **Read the task slice(s).** From `msg-roadmap-task-breakdown`: the task
    file(s) just written for this item with `Scope: back-end` or `full-stack`.
-   Invoked standalone: ask which task number(s), or which endpoint if there's
+   Invoked standalone: ask which task number(s), or which route if there's
    no task file at all (fallback mode).
 2. **Decide whether it applies.** See **When it applies** above. Skip the slice
-   if no endpoint is added or changed.
+   unless it adds a route the application does not serve yet.
 3. **Read the slice's `## Technical details` section** — the `**Area**` bullets.
    This is the entire input; never add a participant, a call, or an error path
    the slice doesn't already describe.
 4. **Read the back-end rule doc**, only the rules the flow actually exercises —
    layering, error mapping, transactions, auth, idempotency, whatever applies.
-   Skim by heading; don't read the whole file for a one-endpoint slice.
-5. **Draw one `sequenceDiagram` per endpoint** the slice adds or changes. Merge
-   nothing: two endpoints are two diagrams, even when their participants match.
+   Skim by heading; don't read the whole file for a one-route slice.
+5. **Draw one `sequenceDiagram` per new route** the slice adds. Merge nothing:
+   two routes are two diagrams, even when their participants match.
 6. **Write or update the section.** Add `## Sequence diagrams` to the task file
    right after `## Technical details`, or replace it whole if it is already
    there. Touch no other section of the file.
@@ -85,7 +105,7 @@ diagrams`.
 
 ## Format
 
-One section per task file, one `**Endpoint:**` block per endpoint:
+One section per task file, one `**Endpoint:**` block per new route:
 
 ````markdown
 ## Sequence diagrams
@@ -131,6 +151,8 @@ Fallback mode (no `docs/tasks/`) uses the same block shape in a standalone
 - Mermaid `sequenceDiagram` only, in a fenced ```mermaid block. No ASCII, no
   other mermaid diagram type — a flow that isn't a sequence of messages between
   participants is not this skill's output.
+- New routes only. A slice that reshapes an existing route's contract gets no
+  diagram here, however large the reshape.
 - Name participants after real things in the codebase's vocabulary — the
   controller, the handler, the repository, the external service — not `A`, `B`,
   `C`. The `participant X as Name` form keeps the arrows narrow.

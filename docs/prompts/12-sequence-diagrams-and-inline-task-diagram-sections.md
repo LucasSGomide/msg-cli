@@ -2,6 +2,7 @@
 
 **Status:** executed on 2026-08-29
 **Rating:** 10
+**Superseded in part by:** [13](13-api-contracts-skill-and-new-route-only-diagrams.md) — constraints 3 and 4's "adds or changes an endpoint" trigger narrowed to a new route; contract changes now go to `msg-api-contracts` instead.
 
 ## Context
 

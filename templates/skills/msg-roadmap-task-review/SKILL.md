@@ -21,7 +21,8 @@ one; with several, ask which.
 
 1. The roadmap doc, in full.
 2. Every numbered task file in the folder.
-3. The rule docs named by `project.yml` for the areas the tasks cite — and the
+3. The folder's `openapi.json`, when it has one.
+4. The rule docs named by `project.yml` for the areas the tasks cite — and the
    Design doc whenever any task is `front-end` or `full-stack`.
 
 Do not preload rule docs for areas no task touches.
@@ -60,12 +61,21 @@ breakdown is lost.
 - Same for **Technical References** — each must be cited by the task it bears on.
 - A bullet reworded into something weaker or ambiguous is a gap; restore the
   parent's wording.
-- A task whose Technical details add or change an **API endpoint** and that has
-  no `## Sequence diagrams` section is a gap — the request path was left to be
-  re-derived at implementation time. Fill it with `/msg-sequence-diagrams`.
-  A slice that only touches migrations, seeders, mappers or an internal refactor
-  needs no diagram; a `back-end` task carrying a diagram for an endpoint it does
-  not touch is a gap the other way.
+- A task whose Technical details add or change an **API endpoint** and whose
+  endpoint has no matching path in the folder's `openapi.json` is a gap — the
+  request and response shapes were left to be re-derived at implementation time,
+  once by the implementer and again by the caller. Fill it with
+  `/msg-api-contracts`.
+- A task that adds a **new route** — a path + method the application does not
+  serve yet — and has no `## Sequence diagrams` section is a gap: the request
+  path was left to be re-derived. Fill it with `/msg-sequence-diagrams`.
+- A task that only **changes** an existing route's contract and yet carries a
+  `## Sequence diagrams` section is a gap the other way — the flow did not move,
+  so the diagram redraws what the codebase already answers. Remove it; the
+  contract in `openapi.json` is what that slice needs. Same for a task carrying
+  a diagram for an endpoint it does not touch at all.
+- A slice that only touches migrations, seeders, mappers, config or an internal
+  refactor needs neither a diagram nor a contract.
 - A diagram with no **Architecture rules** list under it is a gap — restore the
   rule numbers from the `back-end` area's doc.
 
@@ -134,12 +144,14 @@ One table, newest gap class first. No prose walkthrough, no restating what the
 tasks now say.
 
 ```
-Reviewed 04-capture-ingestion — 6 tasks, 4 gaps applied, 1 not applied.
+Reviewed 04-capture-ingestion — 6 tasks, 7 gaps applied, 1 not applied.
 
   fidelity   03  "fx events keyed by effect id" was dropped from the parent
   ux         05  front-end task had no User experience section
   ux         06  front-end task had no Wireframes section
-  fidelity   04  POST /captures had no Sequence diagrams section
+  fidelity   04  new route POST /captures had no Sequence diagrams section
+  fidelity   04  POST /captures had no path in openapi.json
+  fidelity   02  PATCH /captures only reshapes an existing route — diagram removed
   criteria   05  two criteria had no test level → (e2e)
   missing    07  new task: capture deletion — parent commits to it, no task covered it
 
@@ -157,7 +169,9 @@ If nothing is found, say so in one line.
 - Only stop to ask when a rule above says so: criteria over cap, folder over 8
   tasks, a missing parent UX section, or a bare invocation with several folders.
 - Never edit a task file that has a ticked box — that includes adding a missing
-  `## Wireframes` or `## Sequence diagrams` section. Report it under **Not
-  applied**.
+  `## Wireframes` or `## Sequence diagrams` section, and the `openapi.json`
+  reference line. A barred slice's paths are not written into `openapi.json`
+  either, since nothing in the task file would point at them. Report it under
+  **Not applied**.
 - Never renumber, delete, or merge a task.
 - Never invent scope the roadmap item does not commit to.

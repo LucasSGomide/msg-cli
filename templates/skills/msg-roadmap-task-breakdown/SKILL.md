@@ -92,13 +92,20 @@ missing implementation flow as a failure of test 2.
    scoped to front-end items in `msg-roadmap-plan-item`. Skip it entirely for
    an item with no UI-touching slice.
 9. **Invoke `/msg-sequence-diagrams` for every task whose `Scope` is `back-end`
-   or `full-stack` that adds or changes an API endpoint**, right after its file
-   is written. It draws each endpoint into the task file's own `## Sequence
+   or `full-stack` that adds a **new API route**, right after its file is
+   written. It draws each new route into the task file's own `## Sequence
    diagrams` section from its `## Technical details` section. The trigger is the
-   endpoint, not the scope: a slice that only touches migrations, seeders,
-   mappers or an internal refactor has no request flow to draw, and gets
-   nothing.
-10. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
+   new route, not the scope: a slice that only changes an existing route's
+   contract, or that only touches migrations, seeders, mappers or an internal
+   refactor, has no new request flow to draw, and gets nothing.
+10. **Invoke `/msg-api-contracts` for every task that adds or changes an API
+    endpoint**, right after its file is written — the superset of the diagram
+    trigger, so a slice that only reshapes an existing route's payload gets a
+    contract and no diagram. It writes the endpoint into the item's
+    `docs/tasks/<item>/openapi.json` and adds one line to the task's
+    `## References`. A slice that only touches migrations, seeders, mappers,
+    config or an internal refactor gets nothing.
+11. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
     and moves the roadmap item to `in-progress` once a box is ticked. Never write
     a status or a table row by hand.
 
@@ -189,6 +196,7 @@ sequenceDiagram
 
 ## References
 
+- `openapi.json` — contract for `POST /thing`
 - …
 
 ## Implement with
@@ -224,12 +232,15 @@ sequenceDiagram
 - **Technical details** — copied from the parent's bullets, keeping only what this
   slice needs, same `**Area**` prefixes. The legal set is the keys under `areas`
   in `project.yml`.
-- **Sequence diagrams** — **required when the slice adds or changes an API
-  endpoint, omitted otherwise** — including for a `back-end` slice that adds no
-  endpoint. Written by `/msg-sequence-diagrams`, not by hand: one mermaid
-  `sequenceDiagram` per endpoint, each with the architecture rules it obeys.
+- **Sequence diagrams** — **required when the slice adds a new API route,
+  omitted otherwise** — including for a `back-end` slice that only changes an
+  existing route's contract, and for one that adds no endpoint at all. Written
+  by `/msg-sequence-diagrams`, not by hand: one mermaid `sequenceDiagram` per
+  new route, each with the architecture rules it obeys.
 - **References** — the parent's Technical References that bear on this slice, plus
   the rule docs the scope implies. A `front-end` slice always cites the Design doc.
+  A slice that adds or changes an endpoint also cites `openapi.json` — the line
+  is written by `/msg-api-contracts`, not by hand.
 - **Implement with** — the skill that does the work.
 
 ### Acceptance criteria

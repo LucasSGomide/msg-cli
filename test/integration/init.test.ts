@@ -73,6 +73,7 @@ describe('init', () => {
       '.claude/hooks/branch-guard-post.sh',
       '.claude/hooks/branch-guard-pre.sh',
       '.claude/settings.json',
+      '.claude/skills/msg-api-contracts/SKILL.md',
       '.claude/skills/msg-brainstorm/SKILL.md',
       '.claude/skills/msg-commit/SKILL.md',
       '.claude/skills/msg-grill-me/SKILL.md',
