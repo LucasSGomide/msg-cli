@@ -428,14 +428,18 @@ describe('uninstall and the pre-roadmap skills', () => {
     expect(existsSync(join(root, '.claude', 'skills'))).toBe(false);
   });
 
-  it('keeps a hand-edited msg-brainstorm and says whose it is', async () => {
+  it('removes a hand-edited msg-brainstorm anyway, saying it was ours', async () => {
     const root = await scaffolded();
     writeFileSync(join(root, BRAINSTORM), '# Mine now\n', 'utf8');
 
     const result = await uninstall({ root, yes: true }, VERSION);
 
-    expect(result.out.join('\n')).toContain(`kept    ${BRAINSTORM} — yours, remove by hand`);
-    expect(existsSync(join(root, BRAINSTORM))).toBe(true);
+    // The never-overwrite rule does not reach a skill: it was msg's the whole
+    // time, so an edit to it does not make it the project's to keep.
+    expect(result.out.join('\n')).toContain(
+      `remove  ${BRAINSTORM} — msg's own, removed regardless`,
+    );
+    expect(existsSync(join(root, BRAINSTORM))).toBe(false);
   });
 });
 

@@ -551,15 +551,46 @@ describe('init and the pre-roadmap skills', () => {
     expect(listFiles(root)).toContain(BRAINSTORM);
   });
 
-  it('reports both as kept on a second run', async () => {
+  it('reports neither as kept on an unchanged second run', async () => {
     const root = project();
     await init({ root, shape: 'docs-only', seed: false }, VERSION);
 
     const second = await init({ root, shape: 'docs-only', seed: false }, VERSION);
     const out = second.out.join('\n');
 
-    expect(out).toContain(`kept    ${PRE_ROADMAP} (yours)`);
-    expect(out).toContain(`kept    ${BRAINSTORM} (yours)`);
+    // A skill is msg's, so there is no "yours" for it to be kept as. Untouched
+    // it matches the template, and a run that rewrote nothing says nothing.
+    expect(out).not.toContain(PRE_ROADMAP);
+    expect(out).not.toContain(BRAINSTORM);
+    expect(out).toContain('nothing to do');
+  });
+
+  it('replaces a stale skill on a re-run, and says so', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    const shipped = readFileSync(join(root, BRAINSTORM), 'utf8');
+    // What an older msg-cli left behind: a skill from a previous generation of
+    // the templates. Before skills were owned, this survived every re-run and
+    // every uninstall, so the project was pinned to a pipeline the installed
+    // CLI no longer spoke.
+    writeFileSync(join(root, BRAINSTORM), '# An older generation\n', 'utf8');
+
+    const result = await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    expect(readFileSync(join(root, BRAINSTORM), 'utf8')).toBe(shipped);
+    expect(result.out.join('\n')).toContain(`updated ${BRAINSTORM} (ours)`);
+  });
+
+  it('leaves a skill the project wrote under its own name alone', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    const mine = '.claude/skills/my-own-skill/SKILL.md';
+    mkdirSync(join(root, '.claude/skills/my-own-skill'), { recursive: true });
+    writeFileSync(join(root, mine), '# Mine\n', 'utf8');
+
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+
+    expect(readFileSync(join(root, mine), 'utf8')).toBe('# Mine\n');
   });
 
   it('scaffolds msg-brainstorm on its own as a portable skill', async () => {

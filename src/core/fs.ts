@@ -9,16 +9,21 @@ import {
 } from 'node:fs';
 import { dirname, relative } from 'node:path';
 
+import { normalise } from './classify';
 import { mergeBranchGuardHooks } from './settingsJson';
 
 /**
  * What a scaffolding run did, one entry per path it touched. `kept` is not a
  * failure — it is the never-overwrite rule working, and worth reporting so a
  * user who already had a file knows theirs won.
+ *
+ * `updated` and `unchanged` are the msg-owned counterparts of `kept`: a path
+ * msg owns has no "yours" to lose, so it either needed rewriting or already
+ * matched.
  */
 export interface Change {
   readonly path: string;
-  readonly action: 'created' | 'appended' | 'kept';
+  readonly action: 'created' | 'appended' | 'kept' | 'updated' | 'unchanged';
 }
 
 export class Recorder {
@@ -59,6 +64,29 @@ export class Recorder {
     if (options?.executable) chmodSync(to, 0o755);
     this.record(to, 'created');
     return true;
+  }
+
+  /**
+   * Copy a path msg owns, replacing whatever is there.
+   *
+   * The deliberate opposite of `copyIfAbsent`: for an owned path the template
+   * is the source of truth, so a local edit is overwritten rather than
+   * preserved. Reported as `unchanged` when the bytes already match, so a
+   * re-run does not claim a write it did not make.
+   *
+   * Line endings are normalised before comparing, the same way `classifyFile`
+   * does it — a CRLF checkout is not rewritten on every run.
+   */
+  copyOwned(from: string, to: string, options?: { readonly executable?: boolean }): void {
+    const existed = existsSync(to);
+    if (existed && normalise(readFileSync(to, 'utf8')) === normalise(readFileSync(from, 'utf8'))) {
+      this.record(to, 'unchanged');
+      return;
+    }
+    mkdirSync(dirname(to), { recursive: true });
+    copyFileSync(from, to);
+    if (options?.executable) chmodSync(to, 0o755);
+    this.record(to, existed ? 'updated' : 'created');
   }
 
   /**

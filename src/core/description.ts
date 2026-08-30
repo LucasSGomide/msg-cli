@@ -40,6 +40,12 @@ export type ScaffoldEntry =
       readonly kind: 'copied';
       readonly source: string;
       readonly executable?: boolean;
+      /**
+       * msg owns this path outright: `init` overwrites whatever is there and
+       * `uninstall` removes it without checking the bytes first. Only skills
+       * are owned — see `skillEntry`.
+       */
+      readonly owned?: boolean;
     })
   | (BaseEntry & { readonly kind: 'appended'; readonly marker: string })
   | { readonly path: string; readonly kind: 'settings-hook' };
@@ -152,12 +158,24 @@ export function describeSkills(skills: readonly string[]): readonly CopiedEntry[
   return skills.map(skillEntry);
 }
 
+/**
+ * A skill is msg's, not the project's. It is the one entry kind that ignores
+ * the never-overwrite rule: the skills describe a pipeline whose steps call
+ * each other by name, so a project holding one generation of them and one
+ * generation of the CLI silently runs a pipeline with missing steps. Keeping a
+ * locally edited copy is what produced that — the edit wins forever, because
+ * nothing upstream can ever replace bytes it no longer recognises.
+ *
+ * A project that wants its own skill writes one under its own name; everything
+ * under `.claude/skills/msg-*` tracks the installed msg-cli.
+ */
 function skillEntry(skill: string): CopiedEntry {
   const source = join(SKILLS_DIR, skill, 'SKILL.md');
   return {
     path: `.claude/skills/${skill}/SKILL.md`,
     kind: 'copied',
     source,
+    owned: true,
     candidates: [readFileSync(source, 'utf8')],
   };
 }

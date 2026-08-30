@@ -20,7 +20,16 @@ npx @lucas-gomide/msg-cli init
 | `scripts/roadmap-sync.mjs`                                         | The sync engine, vendored — the project owns its copy                       |
 | `Makefile`                                                         | `roadmap-sync` and `roadmap-check` targets                                  |
 
-Nothing is ever overwritten. Re-running `init` fills only the gaps.
+Nothing you write is ever overwritten. Re-running `init` fills only the gaps,
+and reports as `kept (yours)` anything it left alone.
+
+The one exception is `.claude/skills/msg-*`, which msg owns. Those track the
+installed CLI: `init` replaces them when they have drifted (reported as
+`updated (ours)`), and `uninstall` removes them whether or not they were edited.
+That is what makes upgrading work — the skills call each other by name, so a
+project holding one generation of them and another of the CLI runs a pipeline
+with missing steps. To add a skill of your own, give it its own name; anything
+not called `msg-*` is yours and is never touched.
 
 ## Commands
 

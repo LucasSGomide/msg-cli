@@ -122,15 +122,20 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
 
   const created = changes.filter((c) => c.action === 'created');
   const appended = changes.filter((c) => c.action === 'appended');
+  const updated = changes.filter((c) => c.action === 'updated');
   const kept = changes.filter((c) => c.action === 'kept');
 
   for (const change of created) out.push(`  created ${change.path}`);
   for (const change of appended) out.push(`  appended ${change.path}`);
+  // Named individually because this is the one place `init` overwrites: a skill
+  // that had drifted is replaced, and a silent rewrite is the wrong shape for
+  // that.
+  for (const change of updated) out.push(`  updated ${change.path} (ours)`);
   // Reported rather than silent: the never-overwrite rule means the user's own
   // copy won, and they should know which.
   for (const change of kept) out.push(`  kept    ${change.path} (yours)`);
 
-  if (created.length === 0 && appended.length === 0) {
+  if (created.length === 0 && appended.length === 0 && updated.length === 0) {
     out.push('  nothing to do — the project is already set up');
   } else {
     out.push('', '  Next: /msg-roadmap-plan-item to turn an idea into a roadmap item.');
@@ -171,12 +176,12 @@ async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
   out.push(`  skills  ${skills.join(', ')}`);
 
   const created = rec.changes.filter((c) => c.action === 'created');
-  const kept = rec.changes.filter((c) => c.action === 'kept');
+  const updated = rec.changes.filter((c) => c.action === 'updated');
 
   for (const change of created) out.push(`  created ${change.path}`);
-  for (const change of kept) out.push(`  kept    ${change.path} (yours)`);
+  for (const change of updated) out.push(`  updated ${change.path} (ours)`);
 
-  if (created.length === 0) {
+  if (created.length === 0 && updated.length === 0) {
     out.push('  nothing to do — the project is already set up');
   }
 

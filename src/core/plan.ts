@@ -173,6 +173,16 @@ function plan(root: string, entry: ScaffoldEntry): PlanEntry {
       : { path: entry.path, outcome };
   }
 
+  // A path msg owns skips the content check entirely: it was never the
+  // project's to edit, so there is no "yours" for that check to protect, and a
+  // drifted copy is exactly the one removal most needs to reach. Skills are the
+  // only entries in this branch.
+  if (entry.kind === 'copied' && entry.owned) {
+    return existsSync(join(root, entry.path))
+      ? { path: entry.path, outcome: 'remove', note: "msg's own, removed regardless" }
+      : { path: entry.path, outcome: 'absent' };
+  }
+
   return { path: entry.path, outcome: classifyFile(root, entry) };
 }
 

@@ -60,7 +60,8 @@ function applyEntries(root: string, entries: readonly ScaffoldEntry[]): Recorder
         rec.writeIfAbsent(target, entry.candidates[0]);
         break;
       case 'copied':
-        rec.copyIfAbsent(entry.source, target, { executable: entry.executable });
+        if (entry.owned) rec.copyOwned(entry.source, target, { executable: entry.executable });
+        else rec.copyIfAbsent(entry.source, target, { executable: entry.executable });
         break;
       case 'appended':
         rec.createOrAppend(target, entry.candidates[0], entry.marker);
