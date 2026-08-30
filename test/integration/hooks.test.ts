@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -15,23 +15,19 @@ function tempRoot(): string {
   return dir;
 }
 
-/** Run a hook script with a stdin payload; return its exit code and stderr. */
+/** Run a hook script with a stdin payload; return its exit code and stderr
+ *  (stderr is captured on a clean exit too — the gate warns without blocking). */
 function runHook(
   script: string,
   payload: unknown,
   env: NodeJS.ProcessEnv = {},
 ): { code: number; stderr: string } {
-  try {
-    execFileSync('bash', [script], {
-      input: JSON.stringify(payload),
-      env: { ...process.env, ...env },
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    return { code: 0, stderr: '' };
-  } catch (err) {
-    const e = err as { status?: number; stderr?: Buffer };
-    return { code: e.status ?? -1, stderr: e.stderr?.toString() ?? '' };
-  }
+  const r = spawnSync('bash', [script], {
+    input: JSON.stringify(payload),
+    env: { ...process.env, ...env },
+    encoding: 'utf8',
+  });
+  return { code: r.status ?? -1, stderr: r.stderr ?? '' };
 }
 
 afterEach(() => {
@@ -87,117 +83,285 @@ describe('branch-guard-pre.sh', () => {
 });
 
 describe('acceptance-criteria-gate.sh', () => {
-  function projectWithTasks(files: Record<string, string>): string {
+  type Git = (...args: string[]) => string;
+
+  /** A throwaway repo — no real project touched. `main` is the ship target. */
+  function initRepo(): { root: string; git: Git } {
     const root = tempRoot();
+    const git: Git = (...args) =>
+      execFileSync('git', args, {
+        cwd: root,
+        env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).toString();
+    git('init', '-q', '-b', 'main');
+    git('config', 'user.email', 't@e.st');
+    git('config', 'user.name', 'test');
+    git('config', 'commit.gpgsign', 'false');
+    return { root, git };
+  }
+
+  function write(root: string, files: Record<string, string>): void {
     for (const [rel, body] of Object.entries(files)) {
       const full = join(root, rel);
       mkdirSync(join(full, '..'), { recursive: true });
       writeFileSync(full, body, 'utf8');
     }
-    return root;
   }
 
+  function commit(root: string, git: Git, message: string, files: Record<string, string>): void {
+    write(root, files);
+    git('add', '-A');
+    git('commit', '-qm', message);
+  }
+
+  /** Build `main` with the given task files, then freeze it as the ship target. */
+  function project(mainFiles: Record<string, string>): { root: string; git: Git } {
+    const { root, git } = initRepo();
+    commit(root, git, 'init', { 'README.md': '# repo\n', ...mainFiles });
+    git('update-ref', 'refs/remotes/origin/main', 'refs/heads/main');
+    git('config', 'gitbutler.project.targetref', 'refs/remotes/origin/main');
+    return { root, git };
+  }
+
+  const branch = (git: Git, name: string, from = 'main') => git('checkout', '-q', '-b', name, from);
+  const checkout = (git: Git, name: string) => git('checkout', '-q', name);
+
   const bash = (command: string) => ({ tool_input: { command } });
-  const UNTICKED = '# Slice\n\n## Acceptance criteria\n\n- [x] one\n- [ ] two\n';
-  const ALL_TICKED = '# Slice\n\n## Acceptance criteria\n\n- [x] one\n- [x] two\n';
+  const gate = (root: string, command: string) =>
+    runHook(ACCEPTANCE_GATE_SRC, bash(command), { CLAUDE_PROJECT_DIR: root });
+
+  const CRIT = (a: string, b: string) =>
+    `# Slice\n\n## Acceptance criteria\n\n- [${a}] one\n- [${b}] two\n`;
+  const NONE_TICKED = CRIT(' ', ' ');
+  const SOME_TICKED = CRIT('x', ' ');
+  const ALL_TICKED = CRIT('x', 'x');
   const SCRIPT_TICKED =
     '# Test script\n\n## Setup\n\n- [x] boot\n\n## 01 — A\n\n- [x] hit the route\n';
   const SCRIPT_UNTICKED =
     '# Test script\n\n## Setup\n\n- [x] boot\n\n## 01 — A\n\n- [ ] hit the route\n';
 
-  it('blocks `but land` while a task file has an unticked criterion', () => {
-    const root = projectWithTasks({ 'docs/tasks/01-x/01-a.md': UNTICKED });
+  // --- the matrix constraint 7 asks for --------------------------------------
 
-    const result = runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), {
-      CLAUDE_PROJECT_DIR: root,
-    });
-
-    expect(result.code).toBe(2);
-    expect(result.stderr).toContain('docs/tasks/01-x/01-a.md');
-  });
-
-  it('allows `but land` once every criterion is ticked and the test script is complete', () => {
-    const root = projectWithTasks({
-      'docs/tasks/01-x/01-a.md': ALL_TICKED,
+  it('does not gate a ship whose diff touches no task file', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': SOME_TICKED,
       'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
     });
+    branch(git, 'feat/unrelated');
+    commit(root, git, 'feat: code', { 'src/app.ts': 'export const x = 1;\n' });
+    checkout(git, 'main');
+
+    expect(gate(root, 'but land feat/unrelated --yes').code).toBe(0);
+  });
+
+  it('exempts a ship that only adds task files (a freshly authored breakdown)', () => {
+    const { root, git } = project({});
+    branch(git, 'plan/04');
+    commit(root, git, 'docs: breakdown', {
+      'docs/tasks/04-y/01-a.md': NONE_TICKED,
+      'docs/tasks/04-y/02-b.md': NONE_TICKED,
+    });
+    checkout(git, 'main');
+
+    expect(gate(root, 'but land plan/04 --yes').code).toBe(0);
+  });
+
+  it('blocks a ship that ticks some acceptance boxes but leaves others', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: partial', { 'docs/tasks/01-x/01-a.md': SOME_TICKED });
+    checkout(git, 'main');
+
+    const r = gate(root, 'but land feat/x --yes');
+    expect(r.code).toBe(2);
+    expect(r.stderr).toContain('docs/tasks/01-x/01-a.md');
+  });
+
+  it('allows the same ship once every box it touched is ticked', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: done', { 'docs/tasks/01-x/01-a.md': ALL_TICKED });
+    checkout(git, 'main');
+
+    expect(gate(root, 'but land feat/x --yes').code).toBe(0);
+  });
+
+  it('is not tripped by a commit message or heredoc that spells the trigger words', () => {
+    const { root } = project({ 'docs/tasks/01-x/01-a.md': SOME_TICKED });
 
     expect(
-      runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), { CLAUDE_PROJECT_DIR: root })
+      gate(root, 'git commit -m "chore: document how but land and git merge trip the gate"').code,
+    ).toBe(0);
+    expect(
+      gate(root, "git commit -F- <<'EOF'\nchore: notes\nbut land then git merge into main\nEOF")
         .code,
     ).toBe(0);
   });
 
-  it('blocks `but land` when a task folder has no test-script.md', () => {
-    const root = projectWithTasks({ 'docs/tasks/01-x/01-a.md': ALL_TICKED });
+  // --- defect 2: judge the ref, never the working tree ----------------------
 
-    const result = runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), {
-      CLAUDE_PROJECT_DIR: root,
+  it('judges the ship by the ref content, not the working tree', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
     });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: done', { 'docs/tasks/01-x/01-a.md': ALL_TICKED });
+    checkout(git, 'main');
+    // The working tree now holds main's copy — still fully unticked on disk.
+    expect(readFileSync(join(root, 'docs/tasks/01-x/01-a.md'), 'utf8')).toBe(NONE_TICKED);
 
-    expect(result.code).toBe(2);
-    expect(result.stderr).toContain('missing test script: docs/tasks/01-x/test-script.md');
+    expect(gate(root, 'but land feat/x --yes').code).toBe(0);
   });
 
-  it('blocks `but land` while test-script.md has an unticked step', () => {
-    const root = projectWithTasks({
+  // --- the anti-circular case: land a slice, leave a later one open ---------
+
+  it('allows landing one slice while a later slice in the same folder stays open', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/02-b.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+    branch(git, 'feat/x-01');
+    commit(root, git, 'feat: slice 01', { 'docs/tasks/01-x/01-a.md': ALL_TICKED });
+    checkout(git, 'main');
+    // 02-b.md is untouched by the ship and fully unticked — must not block.
+    expect(gate(root, 'but land feat/x-01 --yes').code).toBe(0);
+  });
+
+  // --- the case the signal cannot separate: warn, never block --------------
+
+  it('lets a prose-only task-file edit through, saying it could not verify the slice', () => {
+    const { root, git } = project({ 'docs/tasks/01-x/01-a.md': NONE_TICKED });
+    branch(git, 'feat/x');
+    commit(root, git, 'docs: reword', {
+      'docs/tasks/01-x/01-a.md': `# Slice\n\nReworded.\n\n## Acceptance criteria\n\n- [ ] one\n- [ ] two\n`,
+    });
+    checkout(git, 'main');
+
+    const r = gate(root, 'but land feat/x --yes');
+    expect(r.code).toBe(0);
+    expect(r.stderr).toContain('cannot tell');
+  });
+
+  // --- test-script.md, scoped to what the ship accepts --------------------
+
+  it('blocks an accepted slice whose folder has no test-script.md', () => {
+    const { root, git } = project({ 'docs/tasks/01-x/01-a.md': NONE_TICKED });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: done', { 'docs/tasks/01-x/01-a.md': ALL_TICKED });
+    checkout(git, 'main');
+
+    const r = gate(root, 'but land feat/x --yes');
+    expect(r.code).toBe(2);
+    expect(r.stderr).toContain('docs/tasks/01-x/test-script.md');
+  });
+
+  it('blocks an accepted slice whose test-script.md has an unchecked step', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: done', {
       'docs/tasks/01-x/01-a.md': ALL_TICKED,
       'docs/tasks/01-x/test-script.md': SCRIPT_UNTICKED,
     });
+    checkout(git, 'main');
 
-    const result = runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), {
-      CLAUDE_PROJECT_DIR: root,
+    expect(gate(root, 'but land feat/x --yes').code).toBe(2);
+  });
+
+  it('does not require a test script for a folder the ship only adds or rewords', () => {
+    const { root, git } = project({ 'docs/tasks/01-x/01-a.md': NONE_TICKED });
+    branch(git, 'feat/x');
+    commit(root, git, 'docs: reword', {
+      'docs/tasks/01-x/01-a.md': `# Slice\n\nMore.\n\n## Acceptance criteria\n\n- [ ] one\n- [ ] two\n`,
     });
+    checkout(git, 'main');
 
-    expect(result.code).toBe(2);
-    expect(result.stderr).toContain('unticked test-script step: docs/tasks/01-x/test-script.md');
+    expect(gate(root, 'but land feat/x --yes').code).toBe(0);
   });
 
-  it('does not require a test script for a folder with no numbered task file', () => {
-    const root = projectWithTasks({ 'docs/tasks/01-x/README.md': '# 01 — X\n' });
+  // --- ship detection: merge, push, and the non-ships --------------------
 
-    expect(
-      runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), { CLAUDE_PROJECT_DIR: root })
-        .code,
-    ).toBe(0);
+  it('gates a git merge that carries a half-ticked slice', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: partial', { 'docs/tasks/01-x/01-a.md': SOME_TICKED });
+    checkout(git, 'main');
+
+    expect(gate(root, 'git merge --no-ff feat/x').code).toBe(2);
   });
 
-  it('blocks a git merge and a push to main, but not a push to a feature branch', () => {
-    const root = projectWithTasks({ 'docs/tasks/01-x/01-a.md': UNTICKED });
-    const env = { CLAUDE_PROJECT_DIR: root };
+  it('gates a push that names the target branch, not one to a feature branch', () => {
+    const { root, git } = project({
+      'docs/tasks/01-x/01-a.md': NONE_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: partial', { 'docs/tasks/01-x/01-a.md': SOME_TICKED });
+    checkout(git, 'main');
+    git('merge', '-q', '--ff-only', 'feat/x'); // main now ahead of origin/main
 
-    expect(runHook(ACCEPTANCE_GATE_SRC, bash('git merge --no-ff feat/x'), env).code).toBe(2);
-    expect(runHook(ACCEPTANCE_GATE_SRC, bash('git push origin main'), env).code).toBe(2);
-    expect(runHook(ACCEPTANCE_GATE_SRC, bash('git push origin feat/x'), env).code).toBe(0);
+    expect(gate(root, 'git push origin main').code).toBe(2);
+    expect(gate(root, 'git push origin feat/x').code).toBe(0);
   });
 
   it('never blocks a routine commit', () => {
-    const root = projectWithTasks({ 'docs/tasks/01-x/01-a.md': UNTICKED });
-    const env = { CLAUDE_PROJECT_DIR: root };
+    const { root } = project({ 'docs/tasks/01-x/01-a.md': NONE_TICKED });
 
-    expect(runHook(ACCEPTANCE_GATE_SRC, bash('but commit -m "wip" abc'), env).code).toBe(0);
-    expect(runHook(ACCEPTANCE_GATE_SRC, bash('git commit -am wip'), env).code).toBe(0);
+    expect(gate(root, 'but commit -m "wip" abc').code).toBe(0);
+    expect(gate(root, 'git commit -am wip').code).toBe(0);
   });
 
-  it('passes when there is no docs/tasks tree at all', () => {
+  // --- fail toward letting the ship through when it cannot look ----------
+
+  it('does not gate when the shipped ref cannot be resolved', () => {
+    const { root } = project({ 'docs/tasks/01-x/01-a.md': NONE_TICKED });
+
+    const r = gate(root, 'but land no/such/branch --yes');
+    expect(r.code).toBe(0);
+    expect(r.stderr).toContain('could not resolve');
+  });
+
+  it('does not gate outside a git repo', () => {
     const root = tempRoot();
+    write(root, { 'docs/tasks/01-x/01-a.md': NONE_TICKED });
 
-    expect(
-      runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), { CLAUDE_PROJECT_DIR: root })
-        .code,
-    ).toBe(0);
+    expect(gate(root, 'but land feat/x --yes').code).toBe(0);
   });
 
-  it('only inspects task-file boxes under the Acceptance criteria heading', () => {
-    const root = projectWithTasks({
+  it('does not gate when there is no docs/tasks tree', () => {
+    const { root } = project({});
+
+    expect(gate(root, 'but land feat/x --yes').code).toBe(0);
+  });
+
+  it('reads criteria to end of file, exactly as the sync engine does', () => {
+    const { root, git } = project({
       'docs/tasks/01-x/01-a.md':
-        '# Slice\n\n## Notes\n\n- [ ] a stray box elsewhere\n\n## Acceptance criteria\n\n- [x] one\n',
+        '# Slice\n\n## Notes\n\n- [ ] a stray box before the heading\n\n## Acceptance criteria\n\n- [ ] one\n',
       'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
     });
+    branch(git, 'feat/x');
+    commit(root, git, 'feat: done', {
+      'docs/tasks/01-x/01-a.md':
+        '# Slice\n\n## Notes\n\n- [ ] a stray box before the heading\n\n## Acceptance criteria\n\n- [x] one\n',
+    });
+    checkout(git, 'main');
 
-    expect(
-      runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), { CLAUDE_PROJECT_DIR: root })
-        .code,
-    ).toBe(0);
+    // The pre-heading box is ignored; the one criterion is ticked -> allowed.
+    expect(gate(root, 'but land feat/x --yes').code).toBe(0);
   });
 });

@@ -320,9 +320,11 @@ sync engine never reads `test-script.md` — it stays outside derived state.
 An implementer appends its own section and may add a shared `## Setup` step it
 needs; it never rewrites, reorders, unticks, or deletes another task's section.
 
-The extended `acceptance-criteria-gate.sh` hook blocks `but land` / a merge / a
-push to the target while any task folder holding a numbered task file has an
-unticked criterion, is missing `test-script.md`, or has an unticked step in it.
+The `acceptance-criteria-gate.sh` hook blocks `but land` / a merge / a push to
+the target when **that ship's own diff** ticks some of a task file's criteria and
+leaves others, or accepts a slice whose folder is missing `test-script.md` or has
+an unchecked step. It judges only the files the ship changes — a fresh breakdown
+(all-new, all-unticked) and slices the ship never touches are not in scope.
 
 Ticked checkboxes — criteria and test-script steps — are the only state under
 the docs tree that cannot be reconstructed.

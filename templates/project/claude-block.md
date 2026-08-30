@@ -72,11 +72,27 @@ Ticked checkboxes are sacred, in the criteria and in `test-script.md` alike.
 Append your own section and, if you need one, a shared `## Setup` step; never
 rewrite, reorder, untick, or delete another task's section.
 
-A `PreToolUse` hook gates the ship moment: `but land`, a `git merge`, or a
-`git push` aimed at the target branch is blocked while any task folder under
-`docs/tasks/*/` that holds a numbered task file still has an unticked box beneath
-a `## Acceptance criteria` heading, is missing `test-script.md`, or has an
-unticked step anywhere in that file. Tick the boxes and run `make roadmap-sync`
-before landing. Routine `but commit` / `git commit` are never blocked.
+A `PreToolUse` hook gates the ship moment — `but land`, a `git merge`, or a
+`git push` that names the target branch; routine `but commit` / `git commit`
+never ship. It judges **only the diff the ship carries** (the shipped ref against
+the target), never a repository-wide walk, and reads each task file as it will
+exist on the target *after* the ship. What it blocks:
+
+- a numbered task file this ship **modifies and ticks at least one box in**,
+  where a box beneath `## Acceptance criteria` is still unticked — a slice being
+  accepted half way;
+- a folder this ship accepts a slice into whose `test-script.md` is missing or
+  has an unchecked step.
+
+What it does **not** block, because it cannot tell an in-progress breakdown from
+a forgotten tick: a ship that only **adds** task files (a fresh breakdown is
+unticked by design), or that edits a task file without ticking any box (prose, a
+new criterion). Those pass with a note on stderr. A slice legitimately landing
+while later slices in its folder stay open is fine — untouched files are not in
+scope.
+
+Where the gate blocks, the honest way through is to tick the boxes for work that
+is done and run `make roadmap-sync`, or move a not-yet-done criterion onto its
+own slice — never tick a box for work that does not exist.
 
 <!-- msg-roadmap:end -->
