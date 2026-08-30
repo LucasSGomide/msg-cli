@@ -48,13 +48,35 @@ session branch already created is blocked. Documentation and planning edits
 (prompt files, roadmap docs, task breakdowns) don't need a branch first; create
 one only when you specifically want to.
 
-**Acceptance criteria before landing**
+**Acceptance before landing**
 
-A second `PreToolUse` hook gates the ship moment: `but land`, a `git merge`, or a
-`git push` aimed at the target branch is blocked while any task file under
-`docs/tasks/*/` still has an unticked box beneath its `## Acceptance criteria`
-heading. The engine derives item status from those boxes, so tick them and run
-`make roadmap-sync` before landing. Routine `but commit` / `git commit` are never
-blocked.
+Accepting a task is two acts, done together as the last step of implementing it:
+
+1. **Tick every box** beneath the task's `## Acceptance criteria` heading, once a
+   passing automated test backs each one. The engine derives item status from
+   those boxes.
+2. **Write the task's own section into `docs/tasks/<item>/test-script.md`** — a
+   hand-run runbook, one file per roadmap item beside `README.md` and
+   `openapi.json`, that proves the feature works end to end. It never replaces
+   the `(unit)` / `(integration)` / `(e2e)` criteria; it sits beside them.
+
+`test-script.md` shape: a `## Setup` and a `## Teardown` section written by the
+first task to reach acceptance, then one `## MM — Task title` section appended by
+each later task. Every line is a checkbox holding one concrete action and the
+observable result it must produce — a command and its output, data to seed, a
+request with its status and body, or a click path and what appears. "Verify the
+endpoint works" is not a step. A box is ticked only after the step has actually
+been run; reuse a Setup step already written rather than restating it.
+
+Ticked checkboxes are sacred, in the criteria and in `test-script.md` alike.
+Append your own section and, if you need one, a shared `## Setup` step; never
+rewrite, reorder, untick, or delete another task's section.
+
+A `PreToolUse` hook gates the ship moment: `but land`, a `git merge`, or a
+`git push` aimed at the target branch is blocked while any task folder under
+`docs/tasks/*/` that holds a numbered task file still has an unticked box beneath
+a `## Acceptance criteria` heading, is missing `test-script.md`, or has an
+unticked step anywhere in that file. Tick the boxes and run `make roadmap-sync`
+before landing. Routine `but commit` / `git commit` are never blocked.
 
 <!-- msg-roadmap:end -->

@@ -100,6 +100,10 @@ describe('acceptance-criteria-gate.sh', () => {
   const bash = (command: string) => ({ tool_input: { command } });
   const UNTICKED = '# Slice\n\n## Acceptance criteria\n\n- [x] one\n- [ ] two\n';
   const ALL_TICKED = '# Slice\n\n## Acceptance criteria\n\n- [x] one\n- [x] two\n';
+  const SCRIPT_TICKED =
+    '# Test script\n\n## Setup\n\n- [x] boot\n\n## 01 — A\n\n- [x] hit the route\n';
+  const SCRIPT_UNTICKED =
+    '# Test script\n\n## Setup\n\n- [x] boot\n\n## 01 — A\n\n- [ ] hit the route\n';
 
   it('blocks `but land` while a task file has an unticked criterion', () => {
     const root = projectWithTasks({ 'docs/tasks/01-x/01-a.md': UNTICKED });
@@ -112,8 +116,45 @@ describe('acceptance-criteria-gate.sh', () => {
     expect(result.stderr).toContain('docs/tasks/01-x/01-a.md');
   });
 
-  it('allows `but land` once every criterion is ticked', () => {
+  it('allows `but land` once every criterion is ticked and the test script is complete', () => {
+    const root = projectWithTasks({
+      'docs/tasks/01-x/01-a.md': ALL_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
+    });
+
+    expect(
+      runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), { CLAUDE_PROJECT_DIR: root })
+        .code,
+    ).toBe(0);
+  });
+
+  it('blocks `but land` when a task folder has no test-script.md', () => {
     const root = projectWithTasks({ 'docs/tasks/01-x/01-a.md': ALL_TICKED });
+
+    const result = runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), {
+      CLAUDE_PROJECT_DIR: root,
+    });
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('missing test script: docs/tasks/01-x/test-script.md');
+  });
+
+  it('blocks `but land` while test-script.md has an unticked step', () => {
+    const root = projectWithTasks({
+      'docs/tasks/01-x/01-a.md': ALL_TICKED,
+      'docs/tasks/01-x/test-script.md': SCRIPT_UNTICKED,
+    });
+
+    const result = runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), {
+      CLAUDE_PROJECT_DIR: root,
+    });
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('unticked test-script step: docs/tasks/01-x/test-script.md');
+  });
+
+  it('does not require a test script for a folder with no numbered task file', () => {
+    const root = projectWithTasks({ 'docs/tasks/01-x/README.md': '# 01 — X\n' });
 
     expect(
       runHook(ACCEPTANCE_GATE_SRC, bash('but land feat/x --yes'), { CLAUDE_PROJECT_DIR: root })
@@ -147,10 +188,11 @@ describe('acceptance-criteria-gate.sh', () => {
     ).toBe(0);
   });
 
-  it('only inspects boxes under the Acceptance criteria heading', () => {
+  it('only inspects task-file boxes under the Acceptance criteria heading', () => {
     const root = projectWithTasks({
       'docs/tasks/01-x/01-a.md':
         '# Slice\n\n## Notes\n\n- [ ] a stray box elsewhere\n\n## Acceptance criteria\n\n- [x] one\n',
+      'docs/tasks/01-x/test-script.md': SCRIPT_TICKED,
     });
 
     expect(

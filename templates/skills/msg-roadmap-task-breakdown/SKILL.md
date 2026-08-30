@@ -85,6 +85,11 @@ missing implementation flow as a failure of test 2.
    | --- | ---- | ----- | ---------- | -------- | ------ |
    ```
 
+   The folder ends up holding: this `README.md`, one `NN-slug.md` per task,
+   `openapi.json` if any slice touches an endpoint, and — created later by the
+   implementers, never here — a single `test-script.md`. See "Acceptance: the
+   boxes and the test script".
+
 8. **Invoke `/msg-wireframes` for every task whose `Scope` is `front-end` or
    `full-stack`**, right after its file is written. It draws that slice's
    screens into the task file's own `## Wireframes` section from its `## User
@@ -266,11 +271,59 @@ docs make non-negotiable for the areas the slice touches.
 
 ---
 
-## Who ticks the boxes
+## Acceptance: the boxes and the test script
 
-Not this skill. Acceptance criteria are ticked by whoever implements the task.
-Then `/msg-roadmap-sync` counts them and everything derived follows. Ticked
-checkboxes are the only state under the docs tree that cannot be reconstructed.
+Not this skill. A task is accepted by whoever implements it, in two acts done
+together as the last step before the task is called done:
+
+1. **Tick its acceptance criteria** once a passing automated test backs each one.
+2. **Write this task's section into `docs/tasks/<item>/test-script.md`** — a
+   hand-run runbook that proves the feature works end to end, beside the
+   automated `(unit)` / `(integration)` / `(e2e)` criteria and never replacing
+   them.
+
+`test-script.md` is one file per roadmap item, in the task folder beside
+`README.md` and `openapi.json`. **This skill never creates it** — the first task
+to reach acceptance creates it with `## Setup` and `## Teardown` sections; each
+later task appends its own `## MM — Task title` section and reuses a Setup step
+already written rather than restating it.
+
+Every line is a checkbox holding one concrete action and the observable result
+it must produce — a command and its output, data to seed, a request with its
+status and body, or a click path and what appears. "Verify the endpoint works"
+is not a step. A box is ticked only after the step has actually been run.
+
+```markdown
+# Test script — NN Roadmap item title
+
+## Setup
+
+- [ ] `docker compose up -d db` — postgres answers on 5432
+- [ ] `npm run seed:monsters` — 11 rows in `monster`
+
+## 01 — Task title
+
+- [ ] `curl -sX POST localhost:3000/captures -d '{"monsterId":1}'` → `201`, body carries `id`
+- [ ] Repeat the same request → `409`, still one row in `captures`
+
+## Teardown
+
+- [ ] `docker compose down -v`
+```
+
+Then `/msg-roadmap-sync` counts the criteria and everything derived follows. The
+sync engine never reads `test-script.md` — it stays outside derived state.
+
+**Ticked checkboxes are sacred**, in the criteria and in `test-script.md` alike.
+An implementer appends its own section and may add a shared `## Setup` step it
+needs; it never rewrites, reorders, unticks, or deletes another task's section.
+
+The extended `acceptance-criteria-gate.sh` hook blocks `but land` / a merge / a
+push to the target while any task folder holding a numbered task file has an
+unticked criterion, is missing `test-script.md`, or has an unticked step in it.
+
+Ticked checkboxes — criteria and test-script steps — are the only state under
+the docs tree that cannot be reconstructed.
 
 ## Rules
 
@@ -278,6 +331,8 @@ checkboxes are the only state under the docs tree that cannot be reconstructed.
 - Never duplicate a roadmap dependency into a task's `Depends on`.
 - Never write a task that spans two roadmap items.
 - A criterion with no test level is not a criterion.
-- Ticked checkboxes are sacred. No path through this skill removes one.
+- Ticked checkboxes are sacred, in acceptance criteria and in `test-script.md`.
+  No path through this skill removes one, and an implementer never rewrites,
+  reorders, unticks, or deletes another task's `test-script.md` section.
 - Never write a status, a table row, or a section ordering. That is the sync
   skill's job.
