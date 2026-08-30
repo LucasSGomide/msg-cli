@@ -96,20 +96,22 @@ missing implementation flow as a failure of test 2.
    experience` section — mirrors the User Experience grill already being
    scoped to front-end items in `msg-roadmap-plan-item`. Skip it entirely for
    an item with no UI-touching slice.
-9. **Invoke `/msg-sequence-diagrams` for every task whose `Scope` is `back-end`
-   or `full-stack` that adds a **new API route**, right after its file is
-   written. It draws each new route into the task file's own `## Sequence
-   diagrams` section from its `## Technical details` section. The trigger is the
-   new route, not the scope: a slice that only changes an existing route's
-   contract, or that only touches migrations, seeders, mappers or an internal
-   refactor, has no new request flow to draw, and gets nothing.
-10. **Invoke `/msg-api-contracts` for every task that adds or changes an API
-    endpoint**, right after its file is written — the superset of the diagram
-    trigger, so a slice that only reshapes an existing route's payload gets a
-    contract and no diagram. It writes the endpoint into the item's
-    `docs/tasks/<item>/openapi.json` and adds one line to the task's
-    `## References`. A slice that only touches migrations, seeders, mappers,
-    config or an internal refactor gets nothing.
+9. **Invoke `/msg-api-contracts` for every task that adds or changes an API
+   endpoint**, right after its file is written — the superset of the diagram
+   trigger below, so a slice that only reshapes an existing route's payload gets
+   a contract and no diagram. It writes the endpoint into the item's
+   `docs/tasks/<item>/openapi.json` and adds one line to the task's
+   `## References`. A slice that only touches migrations, seeders, mappers,
+   config or an internal refactor gets nothing.
+10. **Invoke `/msg-sequence-diagrams` for every task whose `Scope` is `back-end`
+    or `full-stack` that adds a **new API route**, right after its file is
+    written. It draws each new route into the task file's own `## Sequence
+    diagrams` section from its `## Technical details` section. The trigger is the
+    new route, not the scope: a slice that only changes an existing route's
+    contract, or that only touches migrations, seeders, mappers or an internal
+    refactor, has no new request flow to draw, and gets nothing. **After
+    contracts, not before** — it reads the item's `openapi.json` to tell a route
+    an earlier slice already contracted from one this slice is adding.
 11. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
     and moves the roadmap item to `in-progress` once a box is ticked. Never write
     a status or a table row by hand.
