@@ -61,3 +61,24 @@
 - When the user asks you to tidy the history, use GitButler to squash commits, reword commits, and move changes between commits where appropriate.
 - Only tidy unpublished local history unless the user explicitly authorizes changing pushed or shared history.
 <!-- gitbutler-agent-setup:end -->
+
+## Branch scope for this repository
+
+- These rules take precedence over the generated GitButler block above, in
+  particular its unconditional "dedicated GitButler branch for each agent
+  session" line.
+- A **code-changing session** keeps a dedicated branch for the whole session:
+  application source, libraries, tests, and build/manifest/config files —
+  `src/`, `lib/`, `test/`, `*.config.*`, `package.json`, lockfiles, `Makefile`.
+  The branch is created before the first code edit and lives until the work is
+  approved to land.
+- A **documentation- or planning-only session** — `docs/prompts/`,
+  `docs/roadmap/`, `docs/tasks/`, `README.md`, `CLAUDE.md`, `PORTING-NOTES.md` —
+  gets no lingering branch. GitButler cannot commit without one, so commit as
+  usual with `but commit -b <branch>`, then land it onto the target immediately
+  with `but land <branch> --yes`, in the same turn. **Landing a docs-only branch
+  is pre-approved — do not ask first.** The workspace should be empty of that
+  branch when the turn ends.
+- A session that starts as docs-only and then touches code becomes a
+  code-changing session: create the branch at the first code edit and keep it.
+- Never land another agent's branch, and never fold docs commits into one.
