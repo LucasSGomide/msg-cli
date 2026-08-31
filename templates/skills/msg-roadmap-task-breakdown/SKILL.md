@@ -127,13 +127,17 @@ slices, don't map them one-to-one.
 
 Caps, enforced:
 
-| Rule                               | Cap        |
-| ---------------------------------- | ---------- |
-| Tasks per roadmap item             | 2–8        |
-| Acceptance criteria per task       | 3–10       |
-| Technical details bullets per task | 8          |
-| User experience bullets per task   | 6          |
-| Context                            | 2000 chars |
+| Rule                               | Cap             |
+| ---------------------------------- | --------------- |
+| Tasks per roadmap item             | 2–8             |
+| Acceptance criteria per task       | 3–10            |
+| Technical details bullets per task | 8               |
+| User experience bullets per task   | 6               |
+| Context                            | 1000–3000 chars |
+
+The Context cap is a range, and both ends are enforced: a Context under 1000
+characters explains too little to be worth reading, and one over 3000 has
+stopped being the quick read it is meant to be. Every other row is a ceiling.
 
 Over the criteria cap means the slice is really two tasks — split it. Under it
 means it should merge into a sibling. An item too small to justify two tasks still
@@ -154,7 +158,11 @@ never renumbered, never reused**, same rule as roadmap numbers. Filename is
 
 ## Context
 
-- Why this slice exists. ≤2000 chars.
+Plain-language prose, 1000–3000 characters, for someone with no prior knowledge
+of the project: what this slice builds, what a person using it does or sees, and
+why it exists as its own slice. Short sentences, ordinary words. Every reference
+explained in the sentence that uses it. Not bullets, not a restatement of the
+sections below.
 
 ## User experience
 
@@ -225,7 +233,11 @@ sequenceDiagram
 
 **Sections**
 
-- **Context** — why this slice, not why the roadmap item. Bullets only.
+- **Context** — plain-language prose explaining this slice (not the whole
+  roadmap item) to a reader who knows nothing about the project: what it builds,
+  what a person using it experiences, and why it is one slice and not another.
+  It is the one section written as prose rather than bullets. Full rules under
+  `## Rules`.
 - **User experience** — **required when `Scope` is `front-end` or `full-stack`,
   omitted otherwise.** Narrowed from the parent's `## User Experience:` section,
   same prefixes (`**Entry**`, `**Flow**`, `**States**`, `**Pattern**`,
@@ -331,7 +343,22 @@ the docs tree that cannot be reconstructed.
 
 ## Rules
 
-- Bullets only, no prose paragraphs. Every bullet is a decision or a fact.
+- Bullets only, no prose paragraphs — **`## Context` is the single exception**.
+  Every bullet in every other section is a decision or a fact.
+- **`## Context` is prose, and these rules govern it:**
+  - Write for a smart reader who knows nothing about this codebase. Short
+    sentences, ordinary words, no shorthand.
+  - Explain *what is being built*: what the code does, what a person using it
+    does or sees, and why this is its own slice.
+  - Every reference is self-explanatory in the sentence that uses it. No bare
+    task numbers (`04`), requirement codes (`FR.25.5`), class or symbol names,
+    file paths, or rule numbers unless the same sentence says in plain words
+    what the thing is. Context must be readable without opening any other file.
+  - It is not a restatement of `## Technical details`, not a list of design
+    decisions and their justifications, not architecture-rule citations — each
+    of those already has its own section.
+  - 1000–3000 characters. Under the floor explains too little; over the ceiling
+    is no longer a quick read.
 - Never duplicate a roadmap dependency into a task's `Depends on`.
 - Never write a task that spans two roadmap items.
 - A criterion with no test level is not a criterion.
