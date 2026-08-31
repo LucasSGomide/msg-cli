@@ -97,6 +97,13 @@ else — not a ticked criterion, not a status flip — ever retires a folder. Un
 the marker is there, `make roadmap-sync` and `make roadmap-check` treat a
 present, fully-ticked breakdown as valid, not stale.
 
+The `retire-breakdown-post.sh` hook that `msg init` installs usually writes the
+marker for you: when this session runs `but land <branch>` or `git merge <branch>`
+and the branch name carries the item number (`feat/04-…`), it stamps `Landed:` /
+`Merged:` on that `done` item. It is a convenience, not the source of truth —
+add the marker by hand whenever the hook did not (a branch without the number, a
+land from a terminal).
+
 Once the marker is present, `make roadmap-sync` lists the folder under `retire`.
 Then:
 

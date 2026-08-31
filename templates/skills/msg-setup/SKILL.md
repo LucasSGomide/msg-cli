@@ -33,6 +33,7 @@ Makefile                           roadmap-sync and roadmap-check targets
 CLAUDE.md                          a delimited msg-roadmap block
 .claude/hooks/branch-guard-*.sh    blocks code edits until this session has a branch
 .claude/hooks/acceptance-criteria-gate.sh  blocks a land/merge/push-to-target whose own diff accepts a slice with boxes left unticked
+.claude/hooks/retire-breakdown-post.sh  after a land/merge of a `<type>/<NN>-…` branch, stamps `Landed:`/`Merged:` on roadmap item NN so the next sync retires its breakdown
 .claude/settings.json              the hooks above, merged into whatever the project already has
 .claude/skills/                    these skills
 ```

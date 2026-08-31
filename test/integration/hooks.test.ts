@@ -5,7 +5,11 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { ACCEPTANCE_GATE_SRC, BRANCH_GUARD_PRE_SRC } from '../../src/core/templates';
+import {
+  ACCEPTANCE_GATE_SRC,
+  BRANCH_GUARD_PRE_SRC,
+  RETIRE_BREAKDOWN_SRC,
+} from '../../src/core/templates';
 
 const dirs: string[] = [];
 
@@ -363,5 +367,194 @@ describe('acceptance-criteria-gate.sh', () => {
 
     // The pre-heading box is ignored; the one criterion is ticked -> allowed.
     expect(gate(root, 'but land feat/x --yes').code).toBe(0);
+  });
+});
+
+describe('retire-breakdown-post.sh', () => {
+  type Git = (...args: string[]) => string;
+
+  function repo(): { root: string; git: Git } {
+    const root = tempRoot();
+    const git: Git = (...args) =>
+      execFileSync('git', args, {
+        cwd: root,
+        env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).toString();
+    git('init', '-q', '-b', 'main');
+    git('config', 'user.email', 't@e.st');
+    git('config', 'user.name', 'test');
+    git('config', 'commit.gpgsign', 'false');
+    return { root, git };
+  }
+
+  function writeFiles(root: string, files: Record<string, string>): void {
+    for (const [rel, body] of Object.entries(files)) {
+      const full = join(root, rel);
+      mkdirSync(join(full, '..'), { recursive: true });
+      writeFileSync(full, body, 'utf8');
+    }
+  }
+
+  const DOC = 'docs/roadmap/04-profiles.md';
+  const roadmapDoc = (status: string, extra = '') =>
+    `# 04 — User profiles\n\n**Depends on:** — · **Estimate:** 5 · **Status:** ${status}${extra}\n\n## Context\n\n- something\n`;
+
+  /**
+   * main carries the roadmap doc and (optionally) the breakdown folder; a
+   * feature branch is built and, unless told otherwise, merged back and
+   * origin/main fast-forwarded so the hook's ancestor check passes.
+   */
+  function landed(
+    opts: {
+      status?: string;
+      marker?: string;
+      withFolder?: boolean;
+      branchName?: string;
+      deleteBranch?: boolean;
+      mergeIt?: boolean;
+    } = {},
+  ): { root: string } {
+    const {
+      status = 'done',
+      marker = '',
+      withFolder = true,
+      branchName = 'feat/04-profiles',
+      deleteBranch = false,
+      mergeIt = true,
+    } = opts;
+
+    const { root, git } = repo();
+    const files: Record<string, string> = {
+      [DOC]: roadmapDoc(status, marker),
+      'docs/roadmap/README.md': '# Roadmap\n\n## Ready\n',
+      'project.yml': 'structure:\n  roadmap: docs/roadmap/\n  tasks: docs/tasks/\n',
+    };
+    if (withFolder) {
+      files['docs/tasks/04-profiles/01-a.md'] = '# a\n\n## Acceptance criteria\n\n- [x] one\n';
+    }
+    writeFiles(root, files);
+    git('add', '-A');
+    git('commit', '-qm', 'init');
+    git('update-ref', 'refs/remotes/origin/main', 'refs/heads/main');
+    git('config', 'gitbutler.project.targetref', 'refs/remotes/origin/main');
+
+    git('checkout', '-q', '-b', branchName);
+    writeFiles(root, { 'src/profiles.ts': 'export const p = 1;\n' });
+    git('add', '-A');
+    git('commit', '-qm', 'feat: profiles');
+    git('checkout', '-q', 'main');
+    if (mergeIt) {
+      git('merge', '-q', '--no-ff', '-m', 'merge', branchName);
+      git('update-ref', 'refs/remotes/origin/main', 'refs/heads/main');
+    }
+    if (deleteBranch) git('branch', '-qD', branchName);
+    return { root };
+  }
+
+  const run = (root: string, command: string, extra: Record<string, unknown> = {}) =>
+    runHook(
+      RETIRE_BREAKDOWN_SRC,
+      { tool_name: 'Bash', tool_input: { command }, ...extra },
+      { CLAUDE_PROJECT_DIR: root },
+    );
+  const doc = (root: string) => readFileSync(join(root, DOC), 'utf8');
+  const marks = (root: string, field: string) =>
+    (doc(root).match(new RegExp(field, 'g')) ?? []).length;
+
+  it('stamps **Landed:** after `but land` of a merged feature branch', () => {
+    const { root } = landed();
+
+    const r = run(root, 'but land feat/04-profiles --yes');
+
+    expect(r.code).toBe(0);
+    expect(doc(root)).toMatch(/\*\*Status:\*\* done · \*\*Landed:\*\* \d{4}-\d{2}-\d{2}/);
+    expect(r.stderr).toContain('retire-breakdown: stamped');
+  });
+
+  it('stamps **Merged:** after a `git merge`', () => {
+    const { root } = landed();
+
+    run(root, 'git merge --no-ff feat/04-profiles');
+
+    expect(doc(root)).toContain('**Merged:**');
+  });
+
+  it('still stamps once `but land` has removed the branch', () => {
+    const { root } = landed({ deleteBranch: true });
+
+    run(root, 'but land feat/04-profiles --yes');
+
+    expect(doc(root)).toContain('**Landed:**');
+  });
+
+  it('does nothing when the item is not done', () => {
+    const { root } = landed({ status: 'in-progress' });
+
+    run(root, 'but land feat/04-profiles --yes');
+
+    expect(doc(root)).not.toContain('**Landed:**');
+  });
+
+  it('does nothing, and does not double-stamp, when the doc is already marked', () => {
+    const { root } = landed({ marker: ' · **Landed:** 2000-01-01' });
+
+    run(root, 'but land feat/04-profiles --yes');
+
+    expect(marks(root, '\\*\\*Landed:\\*\\*')).toBe(1);
+  });
+
+  it('does nothing when the breakdown folder is already gone', () => {
+    const { root } = landed({ withFolder: false });
+
+    run(root, 'but land feat/04-profiles --yes');
+
+    expect(doc(root)).not.toContain('**Landed:**');
+  });
+
+  it('does nothing when the branch name carries no item number', () => {
+    const { root } = landed({ branchName: 'feat/profiles' });
+
+    run(root, 'but land feat/profiles --yes');
+
+    expect(doc(root)).not.toContain('**Landed:**');
+  });
+
+  it('does nothing when the shipped commits are not in the target', () => {
+    const { root } = landed({ mergeIt: false });
+
+    run(root, 'but land feat/04-profiles --yes');
+
+    expect(doc(root)).not.toContain('**Landed:**');
+  });
+
+  it('is not tripped by a commit message that says "but land"', () => {
+    const { root } = landed();
+
+    run(root, 'git commit -m "docs: explain when but land stamps the marker"');
+
+    expect(doc(root)).not.toContain('**Landed:**');
+  });
+
+  it('ignores an interrupted tool call', () => {
+    const { root } = landed();
+
+    run(root, 'but land feat/04-profiles --yes', { tool_response: { interrupted: true } });
+
+    expect(doc(root)).not.toContain('**Landed:**');
+  });
+
+  it('does nothing outside a git repo', () => {
+    const root = tempRoot();
+    writeFiles(root, {
+      [DOC]: roadmapDoc('done'),
+      'docs/tasks/04-profiles/01-a.md': '# a\n',
+      'project.yml': 'structure:\n  roadmap: docs/roadmap/\n  tasks: docs/tasks/\n',
+    });
+
+    const r = run(root, 'but land feat/04-profiles --yes');
+
+    expect(r.code).toBe(0);
+    expect(doc(root)).not.toContain('**Landed:**');
   });
 });

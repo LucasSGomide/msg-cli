@@ -5,6 +5,7 @@ import { mergeBranchGuardHooks, stripBranchGuardHooks } from '../../src/core/set
 const PRE = '"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-guard-pre.sh"';
 const POST = '"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-guard-post.sh"';
 const GATE = '"$CLAUDE_PROJECT_DIR/.claude/hooks/acceptance-criteria-gate.sh"';
+const RETIRE = '"$CLAUDE_PROJECT_DIR/.claude/hooks/retire-breakdown-post.sh"';
 
 describe('mergeBranchGuardHooks', () => {
   it('creates the file from nothing', () => {
@@ -18,7 +19,13 @@ describe('mergeBranchGuardHooks', () => {
       { matcher: 'Bash', hooks: [{ type: 'command', command: GATE }] },
     ]);
     expect(parsed.hooks.PostToolUse).toEqual([
-      { matcher: 'Bash', hooks: [{ type: 'command', command: POST }] },
+      {
+        matcher: 'Bash',
+        hooks: [
+          { type: 'command', command: POST },
+          { type: 'command', command: RETIRE },
+        ],
+      },
     ]);
   });
 
@@ -161,9 +168,10 @@ describe('stripBranchGuardHooks', () => {
     ]);
   });
 
-  it('removes all three entries when the file held only ours, gate included', () => {
+  it('removes every entry when the file held only ours, gate and retire hook included', () => {
     const installed = mergeBranchGuardHooks(null).text;
     expect(installed).toContain('acceptance-criteria-gate.sh');
+    expect(installed).toContain('retire-breakdown-post.sh');
 
     expect(stripBranchGuardHooks(installed)).toEqual({ outcome: 'remove', content: '' });
   });

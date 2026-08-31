@@ -42,6 +42,10 @@ first code edit** of an implementation. Code means application source, libraries
 tests, and build/manifest/config files: `src/`, `lib/`, `app/`, `test/`,
 `tests/`, `*.config.*`, `package.json` and lockfiles, `Makefile`.
 
+Name an implementation branch with the roadmap item number — `feat/04-profiles`,
+`fix/12-…`. The retire hook (below) keys off that number to know which breakdown
+landed; a branch without it just means you add the retire marker by hand.
+
 Neither tool is mandatory; either satisfies the rule. A `PreToolUse` hook (see
 `.claude/settings.json`) enforces it — a Write/Edit touching code without a
 session branch already created is blocked. Documentation and planning edits
@@ -100,9 +104,12 @@ own slice — never tick a box for work that does not exist.
 An item reaching `done` does **not** retire its `docs/tasks/<item>/` folder — the
 breakdown stays put through review and merge, so a reviewer can check the
 implementation against it. It is retired only after the branch actually ships,
-and only when you say so: add `**Landed:** <date>` (GitButler `but land`) or
-`**Merged:** <date>` (a plain `git merge` / PR) to the roadmap item's header as
-the last step of landing. The next `make roadmap-sync` then lists the folder for
+on one explicit signal: `**Landed:** <date>` (GitButler `but land`) or
+`**Merged:** <date>` (a plain `git merge` / PR) on the roadmap item's header.
+The `retire-breakdown-post.sh` hook stamps that marker automatically when this
+session lands or merges a branch whose name carries the item number; stamp it by
+hand when the hook could not (a branch without the number, a land from a
+terminal). The next `make roadmap-sync` then lists the folder for
 `/msg-roadmap-sync` to retire — extract `## As built` onto the roadmap doc, then
 delete the folder. Nothing else triggers it.
 

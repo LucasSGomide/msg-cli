@@ -53,6 +53,17 @@ describe('the published tarball', () => {
     }
   });
 
+  it('ships every hook the scaffolder installs', () => {
+    for (const name of [
+      'branch-guard-pre.sh',
+      'branch-guard-post.sh',
+      'acceptance-criteria-gate.sh',
+      'retire-breakdown-post.sh',
+    ]) {
+      expect(entries).toContain(`templates/hooks/${name}`);
+    }
+  });
+
   it('does not ship the tests or fixtures', () => {
     expect(entries.some((p) => p.startsWith('test/'))).toBe(false);
   });

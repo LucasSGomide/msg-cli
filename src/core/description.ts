@@ -8,6 +8,7 @@ import {
   BRANCH_GUARD_POST_SRC,
   BRANCH_GUARD_PRE_SRC,
   ENGINE_SRC,
+  RETIRE_BREAKDOWN_SRC,
   SKILLS,
   SKILLS_DIR,
   readDocTemplate,
@@ -140,6 +141,13 @@ export function describeScaffold(options: DescriptionOptions): readonly Scaffold
     source: ACCEPTANCE_GATE_SRC,
     executable: true,
     candidates: [readFileSync(ACCEPTANCE_GATE_SRC, 'utf8')],
+  });
+  entries.push({
+    path: '.claude/hooks/retire-breakdown-post.sh',
+    kind: 'copied',
+    source: RETIRE_BREAKDOWN_SRC,
+    executable: true,
+    candidates: [readFileSync(RETIRE_BREAKDOWN_SRC, 'utf8')],
   });
   entries.push({ path: SETTINGS_FILE, kind: 'settings-hook' });
 

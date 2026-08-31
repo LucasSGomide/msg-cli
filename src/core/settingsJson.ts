@@ -31,6 +31,8 @@ interface SettingsShape {
  *  - branch-guard-post — set the "branch exists" flag branch-guard-pre reads
  *  - acceptance-criteria-gate — block a land/merge while task acceptance
  *    criteria are still unticked
+ *  - retire-breakdown-post — after a land/merge, stamp `Landed:` / `Merged:` on
+ *    the roadmap item so the next sync retires its breakdown
  */
 const BRANCH_GUARD: ReadonlyArray<{
   readonly event: string;
@@ -46,6 +48,11 @@ const BRANCH_GUARD: ReadonlyArray<{
     event: 'PostToolUse',
     matcher: 'Bash',
     command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-guard-post.sh"',
+  },
+  {
+    event: 'PostToolUse',
+    matcher: 'Bash',
+    command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/retire-breakdown-post.sh"',
   },
   {
     event: 'PreToolUse',

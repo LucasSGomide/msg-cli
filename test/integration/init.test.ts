@@ -72,6 +72,7 @@ describe('init', () => {
       '.claude/hooks/acceptance-criteria-gate.sh',
       '.claude/hooks/branch-guard-post.sh',
       '.claude/hooks/branch-guard-pre.sh',
+      '.claude/hooks/retire-breakdown-post.sh',
       '.claude/settings.json',
       '.claude/skills/msg-api-contracts/SKILL.md',
       '.claude/skills/msg-brainstorm/SKILL.md',

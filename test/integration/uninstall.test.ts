@@ -347,8 +347,9 @@ describe('uninstall and the branch-guard hook', () => {
   const HOOK_PRE = '.claude/hooks/branch-guard-pre.sh';
   const HOOK_POST = '.claude/hooks/branch-guard-post.sh';
   const HOOK_GATE = '.claude/hooks/acceptance-criteria-gate.sh';
+  const HOOK_RETIRE = '.claude/hooks/retire-breakdown-post.sh';
 
-  it('removes a freshly created settings.json and all three hook scripts', async () => {
+  it('removes a freshly created settings.json and every hook script', async () => {
     const root = await scaffolded();
 
     const result = await uninstall({ root, yes: true }, VERSION);
@@ -358,6 +359,7 @@ describe('uninstall and the branch-guard hook', () => {
     expect(existsSync(join(root, HOOK_PRE))).toBe(false);
     expect(existsSync(join(root, HOOK_POST))).toBe(false);
     expect(existsSync(join(root, HOOK_GATE))).toBe(false);
+    expect(existsSync(join(root, HOOK_RETIRE))).toBe(false);
   });
 
   it('ships the hook scripts executable', async () => {
@@ -366,6 +368,7 @@ describe('uninstall and the branch-guard hook', () => {
     expect(statSync(join(root, HOOK_PRE)).mode & 0o111).not.toBe(0);
     expect(statSync(join(root, HOOK_POST)).mode & 0o111).not.toBe(0);
     expect(statSync(join(root, HOOK_GATE)).mode & 0o111).not.toBe(0);
+    expect(statSync(join(root, HOOK_RETIRE)).mode & 0o111).not.toBe(0);
   });
 
   it('merges into a settings.json the project already owns, and strips only its own entries back out', async () => {
