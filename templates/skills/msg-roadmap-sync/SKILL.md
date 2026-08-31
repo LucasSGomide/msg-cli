@@ -1,6 +1,6 @@
 ---
 name: msg-roadmap-sync
-description: Recompute every derived status and table under the docs tree — task checkboxes into roadmap statuses, roadmap statuses into Ready/Blocked/Parked/Done ordering — and retire finished breakdowns. Use after finishing a task, after ticking acceptance criteria, after adding or parking a roadmap item, when the roadmap check fails, or when the user asks what to pick up next.
+description: Recompute every derived status and table under the docs tree — task checkboxes into roadmap statuses, roadmap statuses into Ready/Blocked/Parked/Done ordering — and retire the breakdowns whose branch has shipped. Use after finishing a task, after ticking acceptance criteria, after landing or merging an item's branch, after adding or parking a roadmap item, when the roadmap check fails, or when the user asks what to pick up next.
 ---
 
 # Sync the roadmap
@@ -34,6 +34,7 @@ nothing, which is why there is no separate project-check target.
 | `- [x]` counts in each task file        | each task's status                                             |
 | all tasks' statuses                     | the roadmap doc's `**Status:**` — written back into the header |
 | `**Depends on:**` + every item's status | Ready · Blocked · Parked · Done                                |
+| `**Landed:**` / `**Merged:**` on a done item + a folder on disk | a `retire` line for that breakdown              |
 | every doc's metadata header             | all five tables                                                |
 
 Ready means every dependency is `done`. Blocked is derived on every run and never
@@ -52,7 +53,12 @@ decision, not a count.
      header.
    - _done, but NN is not_ — either the dependency shipped and nobody synced, or
      the item was marked done early. Ask.
-   - _done, but the task folder still exists_ — retire it, see below.
+   - _landed / merged, but the task folder still exists_ — the branch shipped, so
+     retire it, see below.
+   - _marked landed/merged, but not done_ — a shipped marker went on while a
+     criterion is still unticked. Either the marker is premature (remove it) or
+     the box is a forgotten tick (tick it, if the work is really done). Never
+     tick a box for absent work.
    - _estimate is not a number_ / _no metadata header_ — fix the doc.
 3. **Retire every breakdown the script lists under `retire`.**
 4. **Re-run** until it reports no problems.
@@ -72,11 +78,27 @@ and only reads what is already ticked.
 If asked to sync and criteria are visibly satisfied but unticked, say so and stop.
 Do not tick them on someone else's behalf.
 
-## Retiring a finished breakdown
+## Retiring a shipped breakdown
 
-A task folder is scaffolding for work in flight. Once the item is `done` it is a
-second, staler copy of what the code already says — so it goes, and the part worth
-keeping moves onto the roadmap doc.
+A task folder is scaffolding for work in flight. **It persists through the whole
+review and merge** — a reviewer needs it to check the implementation against the
+plan. It is retired only once the branch has actually shipped, and reaching
+`done` is not that signal: `done` only means the boxes are ticked.
+
+**The one trigger is a marker on the roadmap item's header**, added as the last
+step of landing the branch:
+
+- `**Landed:** <date>` — when the branch was landed with GitButler (`but land`).
+- `**Merged:** <date>` — when it went in through a plain `git merge` / PR.
+
+They are one signal in two spellings; the value is a free-text note (a date, a PR
+link). Add it to the header line alongside `**Status:**`, `·`-separated. Nothing
+else — not a ticked criterion, not a status flip — ever retires a folder. Until
+the marker is there, `make roadmap-sync` and `make roadmap-check` treat a
+present, fully-ticked breakdown as valid, not stale.
+
+Once the marker is present, `make roadmap-sync` lists the folder under `retire`.
+Then:
 
 1. Read the task files. Add or extend `## As built` on the roadmap doc, **above
    `## Blockers:`** when one exists. Bullets only.
@@ -94,8 +116,9 @@ A front-end item's `## User Experience:` section is **kept, not deleted**, and
 corrected if the screen shipped differently from the plan. It is the only record
 of why the screen behaves the way it does once the task folder is gone.
 
-Never retire a breakdown whose item is not `done`. Ticked checkboxes are sacred,
-and so is an open folder.
+Never retire a breakdown whose roadmap doc does not carry `**Landed:**` or
+`**Merged:**`. Ticked checkboxes are sacred, and so is a folder whose branch is
+still in review.
 
 ## The prose above the table
 

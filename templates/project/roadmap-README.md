@@ -13,6 +13,9 @@ permanent ID, never renumbered**. Ordering lives in this table only.
 - `Depends on` is roadmap numbers only. `—` means nothing blocks it.
 - Status: `not-started` · `in-progress` · `parked` · `done`. Derived from the
   item's task checkboxes whenever a breakdown is open.
+- `Landed:` / `Merged:` — added to the header when the branch ships (`but land`
+  or a `git merge`). It is the only thing that retires the item's task breakdown;
+  `done` alone does not.
 - The prose above the table is hand-written and says **why** the next item is
   next. The table sorts by estimate; that sort is not a priority.
 

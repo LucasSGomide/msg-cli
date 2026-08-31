@@ -9,6 +9,8 @@
  * - a roadmap item is Ready when every dependency is done, Blocked when one is not
  * - every table under the roadmap, explorations, ditched and tasks folders is a
  *   projection of the docs' metadata headers
+ * - a breakdown folder is retired only once its roadmap item's header records the
+ *   branch shipped (`Landed:` or `Merged:`) — reaching `done` never retires it
  *
  * What it never does: tick a checkbox, edit a task file, delete a task folder, or
  * touch hand-written prose. Those are judgement calls and belong to the skill.
@@ -45,6 +47,12 @@ const DEFAULT_STRUCTURE = {
 
 const SYNC_COMMAND = 'make roadmap-sync';
 const BREAKDOWN_SKILL = '/msg-roadmap-task-breakdown';
+
+// A breakdown is retired only when its roadmap item's header records that the
+// branch shipped — `Landed:` under GitButler, `Merged:` on plain git. Two
+// spellings of one signal; the value is a free-text note (a date, a link).
+// Order matters only for the message when a doc carries both: `Landed` wins.
+const RETIRE_FIELDS = ['Landed', 'Merged'];
 
 export class DocError extends Error {}
 
@@ -312,6 +320,7 @@ const isDigits = (s) => /^[0-9]+$/.test(s);
  * @property {string} path
  * @property {string} estimate
  * @property {string} status
+ * @property {string} retiredBy  the `Landed`/`Merged` header field that is set, or ''
  * @property {string[]} deps
  * @property {string} text
  * @property {Task[]} tasks
@@ -322,6 +331,9 @@ export const key = (x) => pad(x.number);
 
 /** @param {RoadmapItem} item */
 export const depNumbers = (item) => item.deps.filter(isDigits).map(Number);
+
+/** The breakdown is retired once the branch has shipped. @param {RoadmapItem} item */
+export const isRetired = (item) => Boolean(item.retiredBy);
 
 /** @param {RoadmapItem} item */
 const itemLink = (item) => `[${key(item)}](${basename(item.path)})`;
@@ -357,6 +369,7 @@ export function loadRoadmap(cfg) {
       path,
       estimate: (fields.get('Estimate') ?? '').trim(),
       status,
+      retiredBy: RETIRE_FIELDS.find((f) => (fields.get(f) ?? '').trim() !== '') ?? '',
       deps: parseDeps(fields.get('Depends on') ?? ''),
       text,
       tasks: [],
@@ -504,9 +517,18 @@ export function validate(cfg, items, problems) {
           `roadmap ${key(item)}: done, but ${openDeps.map(pad).join(', ')} is not`,
         );
       }
-      if (item.tasks.length) {
+    }
+    // A present breakdown folder is fine while the work is in review — it only
+    // becomes stale once the item's header says the branch shipped.
+    if (isRetired(item)) {
+      const label = item.retiredBy.toLowerCase();
+      if (item.status !== 'done') {
         problems.push(
-          `roadmap ${key(item)}: done, but ${cfg.rel(cfg.tasks)}/${item.slug}/ still exists — retire it`,
+          `roadmap ${key(item)}: marked ${label}, but status is ${item.status}, not done`,
+        );
+      } else if (item.tasks.length) {
+        problems.push(
+          `roadmap ${key(item)}: ${label}, but ${cfg.rel(cfg.tasks)}/${item.slug}/ still exists — retire it`,
         );
       }
     }
@@ -878,10 +900,12 @@ export function run(cfg, check) {
   }
 
   const retire = [...items.values()]
-    .filter((i) => i.status === 'done' && i.tasks.length)
+    .filter((i) => isRetired(i) && i.status === 'done' && i.tasks.length)
     .sort((a, b) => a.number - b.number);
   for (const item of retire) {
-    out.push(`  retire  ${cfg.rel(cfg.tasks)}/${item.slug}/ — ${key(item)} is done`);
+    out.push(
+      `  retire  ${cfg.rel(cfg.tasks)}/${item.slug}/ — ${key(item)} ${item.retiredBy.toLowerCase()}`,
+    );
   }
 
   return { code: problems.length ? 1 : 0, out, err };

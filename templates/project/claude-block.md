@@ -95,4 +95,15 @@ Where the gate blocks, the honest way through is to tick the boxes for work that
 is done and run `make roadmap-sync`, or move a not-yet-done criterion onto its
 own slice — never tick a box for work that does not exist.
 
+**Retiring the breakdown after it lands**
+
+An item reaching `done` does **not** retire its `docs/tasks/<item>/` folder — the
+breakdown stays put through review and merge, so a reviewer can check the
+implementation against it. It is retired only after the branch actually ships,
+and only when you say so: add `**Landed:** <date>` (GitButler `but land`) or
+`**Merged:** <date>` (a plain `git merge` / PR) to the roadmap item's header as
+the last step of landing. The next `make roadmap-sync` then lists the folder for
+`/msg-roadmap-sync` to retire — extract `## As built` onto the roadmap doc, then
+delete the folder. Nothing else triggers it.
+
 <!-- msg-roadmap:end -->

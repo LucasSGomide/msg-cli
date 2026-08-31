@@ -1,7 +1,7 @@
 {
   "code": 1,
-  "stdout": "  problem roadmap 01: done, but docs/tasks/01-finished/ still exists — retire it\n  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n  stale   docs/tasks/01-finished/README.md\n",
-  "stderr": "\n3 file(s) stale, 1 problem(s). Run `make roadmap-sync`.\n",
+  "stdout": "  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n  stale   docs/tasks/01-finished/README.md\n",
+  "stderr": "\n3 file(s) stale, 0 problem(s). Run `make roadmap-sync`.\n",
   "tree": {
     "docs/roadmap/01-finished.md": "# 01 — Finished\n\n**Depends on:** — · **Estimate:** 5 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
     "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n",
