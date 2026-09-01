@@ -19,9 +19,10 @@ one; with several, ask which.
 
 ## What is read
 
-1. The roadmap doc, in full.
-2. Every numbered task file in the folder.
-3. The folder's `openapi.json`, when it has one.
+1. The roadmap item folder's `README.md`, in full.
+2. Every numbered task file in the task folder.
+3. The roadmap item folder's `openapi.json`, `sequence-diagrams.md` and
+   `wireframes/`, when they exist.
 4. The rule docs named by `project.yml` for the areas the tasks cite — and the
    Design doc whenever any task is `front-end` or `full-stack`.
 
@@ -52,36 +53,34 @@ rewrite an existing `Depends on`.
 The parent is not read again at implementation time, so anything dropped in the
 breakdown is lost.
 
-- Walk every parent **Technical Details** step. Each must appear in at least one
-  task's Technical details, verbatim or narrowed to that slice. A step in no task
-  is a gap, and steps landing out of order across tasks is a gap too — the parent
-  decided that order for a reason.
-- Walk every parent **Key Areas** bullet. Each names a rule doc some task must
-  obey; an area no task carries in its Scope is a gap.
+- Walk every action the parent's `### Back-end` and `### Front-end` prose spells
+  out. Each must appear in at least one task's Technical details, verbatim or
+  narrowed to that slice. An action in no task is a gap, and actions landing out
+  of order across tasks is a gap too — the parent's prose implies a sequence for
+  a reason.
+- Walk every area the parent's `### Back-end` and `### Front-end` prose
+  describes. Each names a rule doc some task must obey; an area no task carries
+  in its `Scope` is a gap.
 - Same for **Technical References** — each must be cited by the task it bears on.
-- A bullet reworded into something weaker or ambiguous is a gap; restore the
+- A sentence reworded into something weaker or ambiguous is a gap; restore the
   parent's wording.
-- A task whose Technical details add or change an **API endpoint** and whose
-  endpoint has no matching path in the folder's `openapi.json` is a gap — the
-  request and response shapes were left to be re-derived at implementation time,
-  once by the implementer and again by the caller. Fill it with
-  `/msg-api-contracts`.
-- A task that adds a **new route** — a path + method the application does not
-  serve yet — and has no `## Sequence diagrams` section is a gap: the request
-  path was left to be re-derived. Fill it with `/msg-sequence-diagrams`.
-- A task that only **changes** an existing route's contract and yet carries a
-  `## Sequence diagrams` section is a gap the other way — the flow did not move,
-  so the diagram redraws what the codebase already answers. Remove it; the
-  contract in `openapi.json` is what that slice needs. Same for a task carrying
-  a diagram for an endpoint it does not touch at all.
+- An endpoint the item's tasks implement that has no matching path in
+  `docs/roadmap/NN-slug/openapi.json` is a gap — the request and response shapes
+  were left to be re-derived at implementation time, once by the implementer and
+  again by the caller. Fill it by running `/msg-api-contracts` against the item.
+- A **new route** the item's tasks add — a path + method the application does
+  not serve yet — with no block in `docs/roadmap/NN-slug/sequence-diagrams.md`
+  is a gap: the request path was left to be re-derived. Fill it by running
+  `/msg-sequence-diagrams` against the item.
 - A slice that only touches migrations, seeders, mappers, config or an internal
   refactor needs neither a diagram nor a contract.
-- A diagram with no **Architecture rules** list under it is a gap — restore the
-  rule numbers from the `back-end` area's doc.
+- A block in the item's `sequence-diagrams.md` with no **Architecture rules**
+  list under it is a gap — restore the rule numbers from the `back-end` area's
+  doc.
 
 ### 2. User experience coverage
 
-Only when the parent has a `## User Experience:` section.
+Only when the parent has a `## User Experience` section.
 
 - Every parent UX bullet must appear in at least one `front-end` or `full-stack`
   task's `## User experience`. A bullet in no task is a screen detail that will
@@ -91,15 +90,19 @@ Only when the parent has a `## User Experience:` section.
 - A `**Pattern**` bullet that lost its citation on the way down is a gap — restore
   the design-doc rule number or `file:line`.
 - A `back-end` task carrying a UX section is a gap the other way. Remove it.
-- A `front-end` or `full-stack` task with **no** `## Wireframes` section is a
-  gap. Fill it with `/msg-wireframes` from that task's UX bullets. A `back-end`
-  task carrying a `## Wireframes` section is a gap the other way — remove it.
-- A wireframe with no **Design rules** list under it is a gap — restore the rule
-  numbers from the Design doc.
+- A screen the item's `## User Experience` describes with no file under the item
+  folder's `wireframes/` is a gap. Fill it by running `/msg-wireframes` against
+  the item.
+- A `front-end` or `full-stack` task that renders a screen but whose
+  `## References` does not link the item folder's `wireframes/` is a gap — add
+  the link.
+- A wireframe file under the item folder's `wireframes/` with no **Design rules**
+  list under it is a gap — restore the rule numbers from the Design doc.
 
-If the parent has a `**Front-end**` bullet but **no** UX section at all, that is
-the breakdown skill's backfill step having been skipped. Say so and stop — writing
-one here would be planning a screen the user never saw a question about.
+If the item's Technical Details has a `### Front-end` half but the item's
+`README.md` has **no** `## User Experience` section at all, that is the breakdown
+skill's backfill step having been skipped. Say so and stop — writing one here
+would be planning a screen the user never saw a question about.
 
 ### 3. Criteria quality
 
@@ -148,10 +151,10 @@ Reviewed 04-capture-ingestion — 6 tasks, 7 gaps applied, 1 not applied.
 
   fidelity   03  "fx events keyed by effect id" was dropped from the parent
   ux         05  front-end task had no User experience section
-  ux         06  front-end task had no Wireframes section
-  fidelity   04  new route POST /captures had no Sequence diagrams section
-  fidelity   04  POST /captures had no path in openapi.json
-  fidelity   02  PATCH /captures only reshapes an existing route — diagram removed
+  ux         06  front-end task renders a screen, References didn't link the item's wireframes/
+  fidelity   04  new route POST /captures had no block in the item's sequence-diagrams.md
+  fidelity   04  POST /captures had no path in the item's openapi.json
+  fidelity   02  PATCH /captures endpoint had no path in the item's openapi.json
   criteria   05  two criteria had no test level → (e2e)
   missing    07  new task: capture deletion — parent commits to it, no task covered it
 
@@ -169,9 +172,8 @@ If nothing is found, say so in one line.
 - Only stop to ask when a rule above says so: criteria over cap, folder over 8
   tasks, a missing parent UX section, or a bare invocation with several folders.
 - Never edit a task file that has a ticked box — that includes adding a missing
-  `## Wireframes` or `## Sequence diagrams` section, and the `openapi.json`
-  reference line. A barred slice's paths are not written into `openapi.json`
-  either, since nothing in the task file would point at them. Report it under
-  **Not applied**.
+  `## References` link to the item folder's `openapi.json`, `sequence-diagrams.md`
+  or `wireframes/`. Report the gap under **Not applied** and leave the file
+  alone.
 - Never renumber, delete, or merge a task.
 - Never invent scope the roadmap item does not commit to.

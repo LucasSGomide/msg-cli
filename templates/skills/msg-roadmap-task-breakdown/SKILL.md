@@ -9,8 +9,9 @@ A roadmap item is a commitment. A task is a **shippable vertical slice** — the
 smallest change that leaves the repo green and coherent, sized so one agent
 session finishes it without compaction. One task, one commit.
 
-The task file is the whole brief. An agent implementing it should never need to
-open the roadmap doc.
+The task file is the whole brief. An agent implementing it works from this file
+and the item-folder artifacts its `## References` links — never from the roadmap
+item's own prose.
 
 **Read `project.yml` first** for the folders and the area vocabulary. No
 `project.yml` means stop and tell the user to run
@@ -27,20 +28,22 @@ The item is the whole input. These are the same five tests
 `/msg-roadmap-plan-item` applies before it finishes, checked here because a thin
 item is invisible once it has been sliced.
 
-1. **Every User Experience behaviour is traceable to a Technical Details step.**
-2. **Every step names a concrete action on a concrete thing.**
-3. **Every Key Areas bullet uses a key from `areas` in `project.yml`**, and any
-   `**Pattern**` bullet cites a numbered design rule.
+1. **Every User Experience behaviour is traceable to a Technical Details
+   sentence.**
+2. **Every Technical Details sentence names a concrete action on a concrete thing.**
+3. **The item's `### Back-end` and `### Front-end` prose each name the rule doc
+   for their area**, and any reused pattern cites a numbered design rule.
 4. **Blockers are real unknowns, each with a repo reference.**
 5. **The estimate is a number.**
 
-Failing 3, 4 or 5 is a fix you can offer to make on the roadmap doc and carry on.
-Failing 1 or 2 means the item is not planned yet: point at
+Failing 3, 4 or 5 is a fix you can offer to make on the item's `README.md` and
+carry on. Failing 1 or 2 means the item is not planned yet: point at
 `/msg-roadmap-plan-item` and stop.
 
-An older item written before Key Areas existed carries a flat `## Technical
-Details:` list of area-prefixed bullets. Read those as Key Areas, and treat the
-missing implementation flow as a failure of test 2.
+An item still in the old single-file shape — `docs/roadmap/NN-slug.md` with no
+folder around it — cannot be broken down here. Stop and tell the user to run
+`msg migrate-roadmap`, which turns the old file into the folder this skill and
+the artifact links below expect. Do not read the old file and slice it anyway.
 
 ## Flow
 
@@ -48,19 +51,19 @@ missing implementation flow as a failure of test 2.
    existing task list with progress counts and say the folder must be deleted to
    redo the breakdown. Never overwrite a task file — ticked checkboxes are the
    only state under the docs tree that cannot be reconstructed.
-2. **Read the roadmap doc.** Only that doc. Do not preload the area rule docs.
+2. **Read the item's `README.md`.** Only that doc. Do not preload the area rule
+   docs.
 3. **Check it is ready to break down.** See the bar above. If it fails, say which
    test it failed and what is missing, and stop. Do not invent the missing detail
    — an item too vague to slice produces tasks too vague to implement, and the
    vagueness then looks decided.
 4. **Check dependencies.** If a dependency is not `done`, say so once and
    continue — not a gate.
-5. **Backfill a missing User Experience section.** If the item has a
-   `**Front-end**` bullet in Key Areas and no `## User Experience:` section, it
-   was planned before the section existed. Grill briefly for it — Entry, Flow,
-   States,
-   Pattern — and **write it onto the roadmap doc** before slicing. Two or three
-   questions, not a design review.
+5. **Backfill a missing User Experience section.** If the item's Technical
+   Details has a `### Front-end` half and the item's `README.md` has no
+   `## User Experience` section, it was planned before the section existed. Grill
+   briefly for it — Entry, Flow, States, Pattern — and **write it onto the item's
+   `README.md`** before slicing. Two or three questions, not a design review.
 6. **Propose the slice list and stop.** Table only, no files written:
 
    ```
@@ -86,35 +89,13 @@ missing implementation flow as a failure of test 2.
    ```
 
    The folder ends up holding: this `README.md`, one `NN-slug.md` per task,
-   `openapi.json` if any slice touches an endpoint, and — created later by the
+   and — created later by the
    implementers, never here — a single `test-script.md`. See "Acceptance: the
    boxes and the test script".
 
-8. **Invoke `/msg-wireframes` for every task whose `Scope` is `front-end` or
-   `full-stack`**, right after its file is written. It draws that slice's
-   screens into the task file's own `## Wireframes` section from its `## User
-   experience` section — mirrors the User Experience grill already being
-   scoped to front-end items in `msg-roadmap-plan-item`. Skip it entirely for
-   an item with no UI-touching slice.
-9. **Invoke `/msg-api-contracts` for every task that adds or changes an API
-   endpoint**, right after its file is written — the superset of the diagram
-   trigger below, so a slice that only reshapes an existing route's payload gets
-   a contract and no diagram. It writes the endpoint into the item's
-   `docs/tasks/<item>/openapi.json` and adds one line to the task's
-   `## References`. A slice that only touches migrations, seeders, mappers,
-   config or an internal refactor gets nothing.
-10. **Invoke `/msg-sequence-diagrams` for every task whose `Scope` is `back-end`
-    or `full-stack` that adds a **new API route**, right after its file is
-    written. It draws each new route into the task file's own `## Sequence
-    diagrams` section from its `## Technical details` section. The trigger is the
-    new route, not the scope: a slice that only changes an existing route's
-    contract, or that only touches migrations, seeders, mappers or an internal
-    refactor, has no new request flow to draw, and gets nothing. **After
-    contracts, not before** — it reads the item's `openapi.json` to tell a route
-    an earlier slice already contracted from one this slice is adding.
-11. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
-    and moves the roadmap item to `in-progress` once a box is ticked. Never write
-    a status or a table row by hand.
+8. **Run `/msg-roadmap-sync`.** It fills that table, adds the tasks README row,
+   and moves the roadmap item to `in-progress` once a box is ticked. Never write
+   a status or a table row by hand.
 
 ## Slicing rules
 
@@ -122,8 +103,8 @@ Slice **vertically**, never by architectural layer. "All the schemas" is not a
 task; "reference tables, migration and mappers" is. A slice that cannot be
 described without the word "and" three times is two slices.
 
-The roadmap doc's Technical Details bullets are the raw material — group them into
-slices, don't map them one-to-one.
+The item's `### Back-end` and `### Front-end` prose is the raw material — group
+what it describes into slices, don't map it one-to-one.
 
 Caps, enforced:
 
@@ -147,14 +128,14 @@ gets a folder with one task file, so the shape stays uniform.
 
 Task numbers are per-folder, zero-padded, starting at `01`. **Permanent IDs —
 never renumbered, never reused**, same rule as roadmap numbers. Filename is
-`MM-kebab-slug.md`. Folder name is the roadmap doc's own filename without `.md`.
+`MM-kebab-slug.md`. Folder name is the roadmap item folder's own name.
 
 ### Template
 
 ````markdown
 # MM — Title
 
-**Roadmap:** [NN](../../roadmap/NN-roadmap-slug.md) · **Scope:** back-end · **Depends on:** 01, 02
+**Roadmap:** [NN](../../roadmap/NN-roadmap-slug/README.md) · **Scope:** back-end · **Depends on:** 01, 02
 
 ## Context
 
@@ -169,40 +150,10 @@ sections below.
 - **Flow** — …
 - **States** — …
 
-## Wireframes
-
-**Screen:** …
-
-```
-+--------------------+
-| ASCII layout       |
-+--------------------+
-```
-
-**Design rules**
-
-- Rule N — …
-
 ## Technical details
 
 - **Database** — …
 - **Back-end** — …
-
-## Sequence diagrams
-
-**Endpoint:** `POST /thing`
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant API as ThingController
-    C->>API: POST /thing {…}
-    API-->>C: 201 Created {id}
-```
-
-**Architecture rules**
-
-- Rule N — …
 
 ## Acceptance criteria
 
@@ -211,8 +162,11 @@ sequenceDiagram
 
 ## References
 
-- `openapi.json` — contract for `POST /thing`
-- …
+- [Roadmap item](../../roadmap/NN-slug/README.md) — the full picture
+- [`openapi.json`](../../roadmap/NN-slug/openapi.json) — the item's contract
+- [Sequence diagrams](../../roadmap/NN-slug/sequence-diagrams.md)
+- [Wireframes](../../roadmap/NN-slug/wireframes/) — screens this slice renders
+- the rule docs the slice's Scope implies
 
 ## Implement with
 
@@ -222,7 +176,8 @@ sequenceDiagram
 **Header fields**
 
 - `Roadmap` — breadcrumb for provenance. It is **not** required reading;
-  everything needed to implement is in this file.
+  everything needed to implement is in this file or linked from its
+  `## References`.
 - `Scope` — `back-end` · `front-end` · `full-stack`. Drives which rule docs the
   implementing agent reads. `full-stack` means both, so prefer splitting when the
   halves are independently shippable.
@@ -239,27 +194,26 @@ sequenceDiagram
   It is the one section written as prose rather than bullets. Full rules under
   `## Rules`.
 - **User experience** — **required when `Scope` is `front-end` or `full-stack`,
-  omitted otherwise.** Narrowed from the parent's `## User Experience:` section,
+  omitted otherwise.** Narrowed from the parent's `## User Experience` section,
   same prefixes (`**Entry**`, `**Flow**`, `**States**`, `**Pattern**`,
   `**New pattern**`), keeping only what this slice renders. Copy verbatim where
   possible. The parent is not read at implementation time, so a bullet left out is
   a screen detail nobody sees again.
-- **Wireframes** — **required when `Scope` is `front-end` or `full-stack`,
-  omitted otherwise.** Written by `/msg-wireframes`, not by hand: ASCII screens
-  drawn from this slice's `## User experience` bullets, each with the design
-  rules it obeys.
-- **Technical details** — copied from the parent's bullets, keeping only what this
-  slice needs, same `**Area**` prefixes. The legal set is the keys under `areas`
-  in `project.yml`.
-- **Sequence diagrams** — **required when the slice adds a new API route,
-  omitted otherwise** — including for a `back-end` slice that only changes an
-  existing route's contract, and for one that adds no endpoint at all. Written
-  by `/msg-sequence-diagrams`, not by hand: one mermaid `sequenceDiagram` per
-  new route, each with the architecture rules it obeys.
-- **References** — the parent's Technical References that bear on this slice, plus
-  the rule docs the scope implies. A `front-end` slice always cites the Design doc.
-  A slice that adds or changes an endpoint also cites `openapi.json` — the line
-  is written by `/msg-api-contracts`, not by hand.
+- **Technical details** — narrowed from the parent's `### Back-end` and
+  `### Front-end` prose, which is written as paragraphs now, not a bullet list.
+  Pull out what this slice needs and write it as bullets with `**Area**`
+  prefixes. The legal set is the keys under `areas` in `project.yml`.
+- **References** — links, never copies. Spell out a relative link to each
+  artifact the roadmap item folder holds, using paths that resolve from the task
+  file's own location (`docs/tasks/NN-slug/MM-slice.md` →
+  `../../roadmap/NN-slug/...`): the item's `README.md`, its `openapi.json`, its
+  `sequence-diagrams.md`, its `wireframes/` folder, plus the rule docs the Scope
+  implies. Only link what exists — a back-end-only item has no `wireframes/`, a
+  UI-only item has no `openapi.json`. The wireframes and the sequence diagrams
+  describe the **whole item**: every slice links the same files, and the slice's
+  own `## User experience` and `## Technical details` bullets say which part of
+  them it builds. Do not narrow those artifacts per slice, and do not invent a
+  "which wireframe belongs to which slice" mechanism.
 - **Implement with** — the skill that does the work.
 
 ### Acceptance criteria
