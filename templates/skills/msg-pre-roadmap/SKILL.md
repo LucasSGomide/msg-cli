@@ -48,7 +48,14 @@ modules never share a number sequence.
    - If yes: spawn a subagent (Task tool) scoped to this one research pass —
      it uses `WebSearch`/`WebFetch`, has no back-and-forth with the user, and
      reports back a summary. It is not a reusable researcher; don't build it
-     as one.
+     as one. Tell it to report only the findings that will actually be
+     applied to this feature, each with a one-or-two-line explanation of what
+     it means here, in direct, concise terms. Not a bibliography, not a list
+     of links, not a survey of everything found.
+     That summary has a destination: it is the raw material for the roadmap
+     item's `### Technical References` section, which `msg-roadmap-plan-item`
+     writes in the next phase. Keep it in the settled project view so it
+     survives to step 6.
    - If no: continue straight to step 5.
 5. **Write requirements.** This is the last step — no separate requirements
    skill. Refine the settled project view (plus research findings, if any)
@@ -73,8 +80,10 @@ modules never share a number sequence.
    - One row per need or requirement. Never renumber or rewrite an existing
      row for another feature or module — this file only grows.
 6. **Hand off.** Tell the user the feature now has requirements recorded and
-   that `msg-roadmap-plan-item` is the next step. Do not invoke it — the user
-   decides when to move on.
+   that `msg-roadmap-plan-item` is the next step. If research ran, say so and
+   name what it found, so the user can hand those findings to plan-item —
+   they land in that skill's `### Technical References` section. Do not invoke
+   `msg-roadmap-plan-item` — the user decides when to move on.
 
 ## How to talk
 
