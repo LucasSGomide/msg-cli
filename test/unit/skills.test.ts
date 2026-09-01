@@ -85,8 +85,10 @@ describe('the skill payload', () => {
     }
   });
 
-  it('describes the Key Areas and Technical Details split in both skills that use it', () => {
-    expect(skillText('msg-roadmap-plan-item')).toContain('## Key Areas vs Technical Details');
+  it('splits Technical Details into Back-end and Front-end, and keeps the breakdown readiness heading', () => {
+    const planItem = skillText('msg-roadmap-plan-item');
+    expect(planItem).toContain('### Back-end');
+    expect(planItem).toContain('### Front-end');
     expect(skillText('msg-roadmap-task-breakdown')).toContain('## Is the item ready?');
   });
 
