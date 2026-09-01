@@ -1,6 +1,6 @@
 # Goal: Plan the roadmap-item-as-folder refactor and write the staged execution prompts for it
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 
 ## Context
