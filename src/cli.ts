@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util';
 import { addArea } from './commands/add-area';
 import { check } from './commands/check';
 import { init } from './commands/init';
+import { migrateRoadmap } from './commands/migrate-roadmap';
 import { uninstall } from './commands/uninstall';
 import { UsageError } from './core/areas';
 import { isCancellation } from './prompts';
@@ -81,6 +82,14 @@ export async function run(argv: string[]): Promise<ExitCode> {
           { root: values.root, dryRun: values['dry-run'], yes: values.yes },
           readVersion(),
         );
+        return emit(result);
+      }
+      case 'migrate-roadmap': {
+        const result = await migrateRoadmap({
+          root: values.root,
+          dryRun: values['dry-run'],
+          yes: values.yes,
+        });
         return emit(result);
       }
       case 'add-area': {

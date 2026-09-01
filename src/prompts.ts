@@ -90,6 +90,21 @@ export async function askUninstall(): Promise<boolean> {
   );
 }
 
+/**
+ * Same default-to-no reasoning as `askUninstall`: files are about to move and
+ * the plan above is long, so a stray Enter must not start the migration.
+ */
+export async function askMigrateRoadmap(): Promise<boolean> {
+  return unwrap(
+    await confirm({
+      message: 'Move the files listed above?',
+      active: 'Move them',
+      inactive: 'Leave them alone',
+      initialValue: false,
+    }),
+  );
+}
+
 export async function askSeed(): Promise<boolean> {
   return unwrap(
     await confirm({

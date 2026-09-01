@@ -14,6 +14,14 @@ describe('USAGE', () => {
     expect(USAGE).toMatch(/uninstall options[\s\S]*-y, --yes/);
   });
 
+  it('lists migrate-roadmap, its flags, and that it is temporary', () => {
+    expect(USAGE).toContain('msg migrate-roadmap');
+    expect(USAGE).toContain('(temporary)');
+    expect(USAGE).toMatch(/migrate-roadmap options[\s\S]*--dry-run/);
+    expect(USAGE).toMatch(/migrate-roadmap options[\s\S]*-y, --yes/);
+    expect(USAGE).toMatch(/migrate-roadmap options[\s\S]*will be removed once/);
+  });
+
   it('states the never-remove-modified guarantee and the version rule', () => {
     expect(USAGE).toContain('A file you have modified is never removed');
     expect(USAGE).toContain('matches the CLI in hand');

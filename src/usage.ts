@@ -5,6 +5,7 @@ Usage
   msg check [--root <dir>]      verify every path named in project.yml exists
   msg add-area <slug> [--seed]  add one area and its rule doc to an existing project
   msg uninstall [options]       remove the scaffold from a project
+  msg migrate-roadmap [options] (temporary) convert single-file roadmap items to folders
 
 init options
   --shape <s>     api | web | both | docs-only | skills-only
@@ -27,6 +28,16 @@ uninstall options
   --root <dir>    project root (default: cwd)
   --dry-run       print the plan and remove nothing
   -y, --yes       skip the confirmation prompt
+
+migrate-roadmap options
+  --root <dir>    project root (default: cwd)
+  --dry-run       print the plan and move nothing
+  -y, --yes       skip the confirmation prompt
+
+  Temporary: it moves an existing repo's single-file roadmap items into the
+  folder shape (docs/roadmap/NN-slug/README.md) and will be removed once
+  repositories have migrated. It only moves files — it never rewrites content
+  and never touches git; you review and commit the result yourself.
 
   -h, --help      show this
   -v, --version   print the version
