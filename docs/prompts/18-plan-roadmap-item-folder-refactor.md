@@ -24,10 +24,12 @@ breakdown a near-complete picture so it can focus on splitting and
 parallelising the work instead of guessing at what to build. Context becomes a
 longer prose explanation. Technical Details becomes prose with a Back-end and a
 Front-end half, each grounded in the project's own architecture and design
-docs, flagging anything new. A front-end reference from the user becomes
-mandatory for any item that touches the UI, and an investigator subagent maps
-that reference against the design guidelines during planning. Mermaid diagrams
-capture the main user interactions.
+docs, flagging anything new. For any item that touches the UI, the skill asks
+the user for a front-end reference but does not require one: if the user
+provides it, an investigator subagent maps that reference against the design
+guidelines during planning; if the user declines, planning proceeds from
+`design.md` and whatever the user described about the UI and UX. Mermaid
+diagrams capture the main user interactions.
 
 **This prompt does not do the refactor.** Running it produces a set of new,
 numbered prompt files under `docs/prompts/`, each one a self-contained brief
@@ -96,10 +98,13 @@ every child prompt names real files and real sections.
    rule. Technical References stays concise but needs no hard number. Update the
    caps table in `msg-roadmap-plan-item` accordingly.
 
-6. **Front-end reference gate.** `msg-roadmap-plan-item` hard-stops for any item
-   with a front-end aspect until the user supplies a front-end reference (a URL
-   or equivalent). Same gate style as the existing requirements gate. Back-end-
-   only items are exempt.
+6. **Front-end reference prompt (optional).** For any item with a front-end
+   aspect, `msg-roadmap-plan-item` asks the user for a front-end reference (a
+   URL or equivalent) but does not hard-stop. If the user supplies one, the web
+   investigator subagent (7) runs against it. If the user declines, the skill
+   records that no reference was given and builds the Front-end prose and
+   interaction diagrams from `design.md`, `architecture-web.md` and whatever
+   UI/UX detail the user provided. Back-end-only items skip the prompt entirely.
 
 7. **Web investigator subagent.** During `msg-roadmap-plan-item`, an inline
    subagent — spawned on the fly, not shipped as an installable
@@ -109,7 +114,9 @@ every child prompt names real files and real sections.
    `design.md` guidelines with a critical eye on user experience, and it feeds
    the Front-end prose and the interaction diagrams. Model it on
    `msg-pre-roadmap`'s optional research subagent — scoped to one pass, no
-   back-and-forth with the user, not built as a reusable agent.
+   back-and-forth with the user, not built as a reusable agent. It runs only
+   when the user supplied a front-end reference; when none is given, this step
+   is skipped and the child prompt should say so explicitly.
 
 8. **`msg-roadmap-plan-item` orchestrates artifact generation.** After the
    `README.md` is written, the skill invokes `msg-wireframes`,
