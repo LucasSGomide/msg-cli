@@ -12,6 +12,13 @@
  * - a breakdown folder is retired only once its roadmap item's header records the
  *   branch shipped (`Landed:` or `Merged:`) — reaching `done` never retires it
  *
+ * A roadmap item is a folder, not a file. It lives at `docs/roadmap/NN-slug/` and
+ * its `README.md` is the document this reads and rewrites. Anything else in that
+ * folder — the contract (`openapi.json`), `wireframes/`, `sequence-diagrams.md`,
+ * `test-script.md` — is permanent hand-written material: the engine never reads
+ * it, never validates it, never rewrites it, and never deletes it, not even when
+ * the item retires. (Explorations and ditched records stay single files.)
+ *
  * What it never does: tick a checkbox, edit a task file, delete a task folder, or
  * touch hand-written prose. Those are judgement calls and belong to the skill.
  *
@@ -253,13 +260,19 @@ export function loadConfig(startDir) {
 /**
  * Return the number, title, header fields and body of a numbered doc.
  *
+ * `label` is what an error message calls the doc. It defaults to the file's own
+ * name, which is right for a task or an exploration. A roadmap item's doc is
+ * always named `README.md`, so a caller there passes the item folder's name
+ * instead — otherwise every broken roadmap doc would just report `README.md`.
+ *
  * @param {string} path
+ * @param {string} [label]
  * @returns {Header}
  */
-export function parseHeader(path) {
+export function parseHeader(path, label) {
   const text = readText(path);
   const lines = splitLines(text);
-  const name = basename(path);
+  const name = label ?? basename(path);
   if (lines.length === 0) throw new DocError(`${name}: empty`);
 
   const titleMatch = TITLE_RE.exec(lines[0]);
@@ -335,8 +348,15 @@ export const depNumbers = (item) => item.deps.filter(isDigits).map(Number);
 /** The breakdown is retired once the branch has shipped. @param {RoadmapItem} item */
 export const isRetired = (item) => Boolean(item.retiredBy);
 
+// The link target for a roadmap item wherever a generated table names one. An
+// item is a folder now, and `item.path` points at the `README.md` inside it. We
+// link to `NN-slug/README.md`, not the bare folder, so a click opens the
+// document instead of a directory listing. This helper is the single place that
+// decides that, so the roadmap README cannot drift from it. (The tasks README
+// links `NN-slug/` on purpose — that points at a task breakdown folder, a real
+// directory of task files, not at a roadmap item.)
 /** @param {RoadmapItem} item */
-const itemLink = (item) => `[${key(item)}](${basename(item.path)})`;
+const itemLink = (item) => `[${key(item)}](${item.slug}/README.md)`;
 
 /** @param {Task} task */
 export function taskStatus(task) {
@@ -345,27 +365,53 @@ export function taskStatus(task) {
 }
 
 /**
+ * A roadmap item is the folder `docs/roadmap/NN-slug/`; its document is the
+ * `README.md` inside it. We list the numbered folders, not files, and read each
+ * folder's `README.md`. `item.slug` is the folder name; `item.path` is the path
+ * to that `README.md`.
+ *
+ * Two things that used to be impossible are now just problems, not crashes:
+ * a numbered folder with no `README.md`, and a leftover single file
+ * `docs/roadmap/NN-slug.md` from before the folder layout. The second one names
+ * the command that fixes it. Staying silent about either is how a repository
+ * ends up half migrated.
+ *
  * @param {Config} cfg
+ * @param {string[]} problems
  * @returns {Map<number, RoadmapItem>}
  */
-export function loadRoadmap(cfg) {
+export function loadRoadmap(cfg, problems) {
   /** @type {Map<number, RoadmapItem>} */
   const items = new Map();
-  for (const name of listSorted(cfg.roadmap, isNumberedDoc)) {
-    const path = join(cfg.roadmap, name);
-    const { number, title, fields, text } = parseHeader(path);
+  const roadmapRel = cfg.rel(cfg.roadmap);
+
+  for (const name of listSorted(cfg.roadmap, isNumberedFolder)) {
+    const folder = join(cfg.roadmap, name);
+    // `isNumberedFolder` also matches a name like `01-old.md`. Skip anything that
+    // is not a directory here; the leftover-file check below reports those.
+    if (!statSync(folder).isDirectory()) continue;
+
+    const path = join(folder, 'README.md');
+    if (!existsSync(path)) {
+      problems.push(
+        `${roadmapRel}/${name}: no README.md inside — that file is the item's document`,
+      );
+      continue;
+    }
+
+    const { number, title, fields, text } = parseHeader(path, name);
     const status = (fields.get('Status') ?? '').trim();
     if (!STATUSES.includes(status)) {
       throw new DocError(`${name}: status '${status}' not one of ${STATUSES.join(', ')}`);
     }
     const existing = items.get(number);
     if (existing) {
-      throw new DocError(`${name}: number ${pad(number)} is already taken by ${existing.slug}.md`);
+      throw new DocError(`${name}: number ${pad(number)} is already taken by ${existing.slug}/`);
     }
     items.set(number, {
       number,
       title,
-      slug: name.replace(/\.md$/, ''),
+      slug: name,
       path,
       estimate: (fields.get('Estimate') ?? '').trim(),
       status,
@@ -375,6 +421,16 @@ export function loadRoadmap(cfg) {
       tasks: [],
     });
   }
+
+  // A file `docs/roadmap/NN-slug.md` is the old layout. Do not try to parse it
+  // and do not ignore it — tell the user the exact command that moves it.
+  for (const name of listSorted(cfg.roadmap, isNumberedDoc)) {
+    const slug = name.replace(/\.md$/, '');
+    problems.push(
+      `${roadmapRel}/${name}: a roadmap item is a folder now — run \`msg migrate-roadmap\` to move it to ${slug}/README.md`,
+    );
+  }
+
   return items;
 }
 
@@ -832,7 +888,7 @@ export function run(cfg, check) {
       return { code: 2, out, err };
     }
 
-    items = loadRoadmap(cfg);
+    items = loadRoadmap(cfg, problems);
     loadTasks(cfg, items, problems);
     statusChanges = deriveStatuses(items);
     validate(cfg, items, problems);

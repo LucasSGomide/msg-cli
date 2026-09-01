@@ -3,12 +3,12 @@
   "stdout": "  wrote   docs/roadmap/README.md\n  wrote   docs/tasks/README.md\n",
   "stderr": "",
   "tree": {
-    "docs/roadmap/01-one.md": "# 01 — One\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/02-two.md": "# 02 — Two\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/03-three.md": "# 03 — Three\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/05-five.md": "# 05 — Five\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/06-six.md": "# 06 — Six\n\n**Depends on:** — · **Estimate:** 1 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [06](06-six.md) | Six | 1 | — | not-started |\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [01](01-one.md) | One | 1 | — | done |\n| [02](02-two.md) | Two | 1 | — | done |\n| [03](03-three.md) | Three | 1 | — | done |\n| [05](05-five.md) | Five | 1 | — | done |\n",
+    "docs/roadmap/01-one/README.md": "# 01 — One\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/02-two/README.md": "# 02 — Two\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/03-three/README.md": "# 03 — Three\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/05-five/README.md": "# 05 — Five\n\n**Depends on:** — · **Estimate:** 1 · **Status:** done\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/06-six/README.md": "# 06 — Six\n\n**Depends on:** — · **Estimate:** 1 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [06](06-six/README.md) | Six | 1 | — | not-started |\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n| # | Item | Est | Depends on | Status |\n|---|---|---|---|---|\n| [01](01-one/README.md) | One | 1 | — | done |\n| [02](02-two/README.md) | Two | 1 | — | done |\n| [03](03-three/README.md) | Three | 1 | — | done |\n| [05](05-five/README.md) | Five | 1 | — | done |\n",
     "docs/tasks/README.md": "# Task breakdowns\n\nA roadmap item being implemented gets a folder here: one file per shippable\nslice, each with acceptance criteria that double as its tests.\n\nA folder lives only while the item is open. Items 01–03 and 05 are `done`.\n\n_No breakdown is open. Create one with `/msg-roadmap-task-breakdown NN`._\n"
   }
 }

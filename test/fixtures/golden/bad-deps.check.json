@@ -3,9 +3,9 @@
   "stdout": "  problem roadmap 01: depends on 09, which does not exist\n  problem roadmap 02: depends on itself\n  problem roadmap 03: dependency 'later' is not a number\n  stale   docs/roadmap/README.md\n",
   "stderr": "\n1 file(s) stale, 3 problem(s). Run `make roadmap-sync`.\n",
   "tree": {
-    "docs/roadmap/01-ghost.md": "# 01 — Ghost dep\n\n**Depends on:** 09 · **Estimate:** 2 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/02-self.md": "# 02 — Self dep\n\n**Depends on:** 02 · **Estimate:** 2 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
-    "docs/roadmap/03-word.md": "# 03 — Word dep\n\n**Depends on:** later · **Estimate:** 2 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/01-ghost/README.md": "# 01 — Ghost dep\n\n**Depends on:** 09 · **Estimate:** 2 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/02-self/README.md": "# 02 — Self dep\n\n**Depends on:** 02 · **Estimate:** 2 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/03-word/README.md": "# 03 — Word dep\n\n**Depends on:** later · **Estimate:** 2 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
     "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n"
   }
 }

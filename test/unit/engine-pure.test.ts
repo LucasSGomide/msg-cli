@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, describe, expect, it } from 'vitest';
 
 // Plain JS, checked under tsconfig.js.json rather than this project.
 import * as engine from '../../templates/scripts/roadmap-sync.mjs';
@@ -8,7 +12,10 @@ const {
   ditchedReadme,
   emptyTable,
   firstBullet,
+  loadConfig,
+  loadRoadmap,
   parseDeps,
+  parseHeader,
   parseSimpleYaml,
   renderTable,
   replaceField,
@@ -238,5 +245,97 @@ describe('ditchedReadme ordering', () => {
     rows.sort((a, b) => (a[2]! < b[2]! ? 1 : a[2]! > b[2]! ? -1 : 0));
     expect(rows.map((r) => r[0])).toEqual(['[02](02.md)', '[03](03.md)', '[01](01.md)']);
     expect(typeof ditchedReadme).toBe('function');
+  });
+});
+
+// A roadmap item is now the folder `docs/roadmap/NN-slug/`, and its document is
+// the `README.md` inside it. These touch the filesystem because `parseHeader`
+// and `loadRoadmap` read real files — everything above this line is pure.
+describe('parseHeader label', () => {
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('names the doc by its label, not its filename, in an error message', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'msg-header-'));
+    dirs.push(dir);
+    const path = join(dir, 'README.md');
+    writeFileSync(path, 'not a title line\n', 'utf8');
+
+    // Without a label the message would just say `README.md`, which is useless
+    // when every roadmap item's doc is named that.
+    expect(() => parseHeader(path)).toThrow(/^README\.md: first line is not/);
+    expect(() => parseHeader(path, '01-slug')).toThrow(/^01-slug: first line is not/);
+  });
+});
+
+describe('loadRoadmap folder shape', () => {
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  const project = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'msg-roadmap-'));
+    dirs.push(dir);
+    mkdirSync(join(dir, 'docs', 'roadmap'), { recursive: true });
+    return dir;
+  };
+
+  const item = (dir: string, slug: string, header: string) => {
+    const folder = join(dir, 'docs', 'roadmap', slug);
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(join(folder, 'README.md'), `# ${header}\n\n## Context\n\n- x.\n`, 'utf8');
+  };
+
+  it('reads NN-slug/README.md, with slug = folder and path = the README', () => {
+    const dir = project();
+    item(dir, '01-first', '01 — First\n\n**Estimate:** 2 · **Status:** not-started');
+    const problems: string[] = [];
+    const items = loadRoadmap(loadConfig(dir), problems);
+
+    expect(problems).toEqual([]);
+    expect(items.get(1).slug).toBe('01-first');
+    expect(items.get(1).path).toBe(join(dir, 'docs', 'roadmap', '01-first', 'README.md'));
+  });
+
+  it('reports a numbered folder with no README.md as a problem, not a crash', () => {
+    const dir = project();
+    mkdirSync(join(dir, 'docs', 'roadmap', '01-no-readme'), { recursive: true });
+    const problems: string[] = [];
+    const items = loadRoadmap(loadConfig(dir), problems);
+
+    expect(items.size).toBe(0);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toBe(
+      "docs/roadmap/01-no-readme: no README.md inside — that file is the item's document",
+    );
+  });
+
+  it('reports a leftover single-file item and names `msg migrate-roadmap`', () => {
+    const dir = project();
+    writeFileSync(
+      join(dir, 'docs', 'roadmap', '01-old.md'),
+      '# 01 — Old\n\n**Estimate:** 1 · **Status:** not-started\n',
+      'utf8',
+    );
+    const problems: string[] = [];
+    const items = loadRoadmap(loadConfig(dir), problems);
+
+    expect(items.size).toBe(0);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('docs/roadmap/01-old.md');
+    expect(problems[0]).toContain('msg migrate-roadmap');
+    expect(problems[0]).toContain('01-old/README.md');
+  });
+
+  it('still throws when two folders claim the same number', () => {
+    const dir = project();
+    item(dir, '01-clash', '01 — Clash\n\n**Estimate:** 1 · **Status:** not-started');
+    item(dir, '01-first', '01 — First\n\n**Estimate:** 1 · **Status:** not-started');
+    expect(() => loadRoadmap(loadConfig(dir), [])).toThrow(
+      /01-first: number 01 is already taken by 01-clash\//,
+    );
   });
 });

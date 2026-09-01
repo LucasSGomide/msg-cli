@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "  problem docs/roadmap/01-old.md: a roadmap item is a folder now — run `msg migrate-roadmap` to move it to 01-old/README.md\n",
+  "stderr": "\n0 file(s) stale, 1 problem(s). Run `make roadmap-sync`.\n",
+  "tree": {
+    "docs/roadmap/01-old.md": "# 01 — Old single file\n\n**Depends on:** — · **Estimate:** 3 · **Status:** not-started\n\n## Context\n\n- Written before a roadmap item was a folder.\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n"
+  }
+}

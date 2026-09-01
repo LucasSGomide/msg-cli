@@ -3,7 +3,7 @@
   "stdout": "  problem docs/tasks/01-old-name: folder should be named 01-renamed after its roadmap doc\n  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n",
   "stderr": "\n2 file(s) stale, 1 problem(s). Run `make roadmap-sync`.\n",
   "tree": {
-    "docs/roadmap/01-renamed.md": "# 01 — Renamed\n\n**Depends on:** — · **Estimate:** 5 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/01-renamed/README.md": "# 01 — Renamed\n\n**Depends on:** — · **Estimate:** 5 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
     "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n",
     "docs/tasks/01-old-name/01-slice.md": "# 01 — Slice\n\n**Roadmap:** [01](../../roadmap/01-x.md) · **Scope:** back-end · **Depends on:** —\n\n## Acceptance criteria\n\n- [ ] criterion 1 (unit)\n",
     "docs/tasks/01-old-name/README.md": "# 01 — Renamed\n\nTasks for this item.\n\n| # | Task | Scope | Depends on | Criteria | Status |\n|---|---|---|---|---|---|\n",

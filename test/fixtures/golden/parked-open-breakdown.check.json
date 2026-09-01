@@ -3,7 +3,7 @@
   "stdout": "  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n  stale   docs/tasks/01-parked-work/README.md\n",
   "stderr": "\n3 file(s) stale, 0 problem(s). Run `make roadmap-sync`.\n",
   "tree": {
-    "docs/roadmap/01-parked-work.md": "# 01 — Parked work\n\n**Depends on:** — · **Estimate:** 5 · **Status:** parked\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/01-parked-work/README.md": "# 01 — Parked work\n\n**Depends on:** — · **Estimate:** 5 · **Status:** parked\n\n## Context\n\n- Something worth doing.\n",
     "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n",
     "docs/tasks/01-parked-work/01-first.md": "# 01 — First slice\n\n**Roadmap:** [01](../../roadmap/01-x.md) · **Scope:** back-end · **Depends on:** —\n\n## Acceptance criteria\n\n- [x] criterion 1 (unit)\n- [ ] criterion 2 (unit)\n",
     "docs/tasks/01-parked-work/README.md": "# 01 — Parked work\n\nTasks for this item.\n\n| # | Task | Scope | Depends on | Criteria | Status |\n|---|---|---|---|---|---|\n",

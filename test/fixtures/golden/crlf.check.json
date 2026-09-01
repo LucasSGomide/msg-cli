@@ -3,7 +3,7 @@
   "stdout": "  stale   docs/roadmap/README.md\n",
   "stderr": "\n1 file(s) stale, 0 problem(s). Run `make roadmap-sync`.\n",
   "tree": {
-    "docs/roadmap/01-windows.md": "# 01 — Written on Windows\r\n\r\n**Depends on:** — · **Estimate:** 5 · **Status:** not-started\r\n\r\n## Context\r\n\r\n- Line endings.\r\n",
+    "docs/roadmap/01-windows/README.md": "# 01 — Written on Windows\r\n\r\n**Depends on:** — · **Estimate:** 5 · **Status:** not-started\r\n\r\n## Context\r\n\r\n- Line endings.\r\n",
     "docs/roadmap/README.md": "# Roadmap\r\n\r\nCommitted work. One doc per item, numbered on creation — **the number is a\r\npermanent ID, never renumbered**. Ordering lives in this table only.\r\n\r\n**Next up: _nothing yet._**\r\n\r\n## Ready\r\n\r\n_(none)_\r\n\r\n## Blocked\r\n\r\n_(none)_\r\n\r\n## Parked\r\n\r\n_(none)_\r\n\r\n## Done\r\n\r\n_(none)_\r\n"
   }
 }

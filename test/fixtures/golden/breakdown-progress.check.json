@@ -1,9 +1,9 @@
 {
   "code": 1,
-  "stdout": "  status  roadmap 01 not-started -> in-progress\n  stale   docs/roadmap/01-under-way.md\n  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n  stale   docs/tasks/01-under-way/README.md\n",
+  "stdout": "  status  roadmap 01 not-started -> in-progress\n  stale   docs/roadmap/01-under-way/README.md\n  stale   docs/roadmap/README.md\n  stale   docs/tasks/README.md\n  stale   docs/tasks/01-under-way/README.md\n",
   "stderr": "\n4 file(s) stale, 0 problem(s). Run `make roadmap-sync`.\n",
   "tree": {
-    "docs/roadmap/01-under-way.md": "# 01 — Under way\n\n**Depends on:** — · **Estimate:** 8 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
+    "docs/roadmap/01-under-way/README.md": "# 01 — Under way\n\n**Depends on:** — · **Estimate:** 8 · **Status:** not-started\n\n## Context\n\n- Something worth doing.\n",
     "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n",
     "docs/tasks/01-under-way/01-one.md": "# 01 — Slice one\n\n**Roadmap:** [01](../../roadmap/01-x.md) · **Scope:** back-end · **Depends on:** —\n\n## Acceptance criteria\n\n- [x] criterion 1 (unit)\n- [x] criterion 2 (unit)\n",
     "docs/tasks/01-under-way/02-two.md": "# 02 — Slice two\n\n**Roadmap:** [01](../../roadmap/01-x.md) · **Scope:** front-end · **Depends on:** 01\n\n## Acceptance criteria\n\n- [x] criterion 1 (unit)\n- [ ] criterion 2 (unit)\n- [ ] criterion 3 (unit)\n",

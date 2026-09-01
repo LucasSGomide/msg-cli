@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "  problem docs/roadmap/01-no-readme: no README.md inside — that file is the item's document\n  nothing to do — every table already matches the docs\n",
+  "stderr": "",
+  "tree": {
+    "docs/roadmap/01-no-readme/sequence-diagrams.md": "# Sequence diagrams\n\nArtifacts landed here, but nobody wrote the README.md.\n",
+    "docs/roadmap/README.md": "# Roadmap\n\nCommitted work. One doc per item, numbered on creation — **the number is a\npermanent ID, never renumbered**. Ordering lives in this table only.\n\n**Next up: _nothing yet._**\n\n## Ready\n\n_(none)_\n\n## Blocked\n\n_(none)_\n\n## Parked\n\n_(none)_\n\n## Done\n\n_(none)_\n"
+  }
+}
