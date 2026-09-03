@@ -64,25 +64,44 @@ the artifact links below expect. Do not read the old file and slice it anyway.
    `## User Experience` section, it was planned before the section existed. Grill
    briefly for it — Entry, Flow, States, Pattern — and **write it onto the item's
    `README.md`** before slicing. Two or three questions, not a design review.
-6. **Propose the slice list and stop.** Table only, no files written:
+6. **Propose the slice list, grouped by wave, and stop.** Table only, no files
+   written. Name which tasks are parallel and which run alone:
 
    ```
    Proposed breakdown of roadmap 01 (5 tasks):
 
-     01  api package scaffold + config module   back-end   deps: —
-     02  postgres compose + drizzle-kit         back-end   deps: 01
-     03  reference tables (11)                  back-end   deps: 02
+     wave 1 — run alone
+       01  api package scaffold + config     back-end  deps: —
+
+     wave 2 — 3 tasks, parallel
+       02  postgres compose + drizzle-kit    back-end  deps: 01
+       03  reference tables (11)             back-end  deps: 01
+       04  monster mapper + DAO              back-end  deps: 01
+
+     wave 3 — run alone
+       05  capture endpoint                  back-end  deps: 02, 03, 04
 
    Approve, or tell me what to merge / split / reorder.
    ```
 
+   The user is approving the parallel plan, not just the slice list. A wave
+   computed from wrong `Depends on` edges is consistent with those edges, so no
+   automated check catches a bad dependency map — this table is the only place
+   it is ever caught.
+
 7. **On approval, write the task files and the folder README in one pass.** The
-   README is prose plus an empty table — heading row and separator only:
+   README is prose plus an empty table — heading row and separator only. The
+   prose ends with a `**Waves.**` paragraph stating the grouping in plain words.
+   It is hand-written and sync never rewrites it, so it survives every later
+   sync:
 
    ```markdown
    # NN — Roadmap item title
 
    One or two lines on how this item was sliced. Hand-written; sync never touches it.
+
+   **Waves.** 01 runs alone. 02, 03 and 04 depend only on 01 and touch no
+   shared files — safe to run in parallel. 05 needs all three and runs alone.
 
    | #   | Task | Scope | Depends on | Criteria | Status |
    | --- | ---- | ----- | ---------- | -------- | ------ |
@@ -123,6 +142,23 @@ stopped being the quick read it is meant to be. Every other row is a ceiling.
 Over the criteria cap means the slice is really two tasks — split it. Under it
 means it should merge into a sibling. An item too small to justify two tasks still
 gets a folder with one task file, so the shape stays uniform.
+
+### Waves
+
+Tasks run in parallel-safe **waves**, derived from `Depends on` and never
+written into a header. Wave 1 is every task with `Depends on: —`. A task's wave
+is `1 + the highest wave among the tasks it depends on`.
+
+Two slices that would edit the same file must not share a wave. Put one in the
+other's `Depends on`, pushing it to the next wave. After this rule `Depends on`
+means "cannot run at the same time" — logical ordering and file collisions
+both. GitButler does not rescue a collision: every applied branch shares one
+working tree, so parallel agents write the same file on disk.
+
+The skill only plans the waves. Nothing spawns automatically — the user decides
+at execution time whether to run a wave's tasks in parallel. New breakdowns
+only: task folders that already exist keep working, their `Depends on` edges
+just are not collision-checked.
 
 ### Numbering
 
@@ -255,6 +291,14 @@ together as the last step before the task is called done:
 to reach acceptance creates it with `## Setup` and `## Teardown` sections; each
 later task appends its own `## MM — Task title` section and reuses a Setup step
 already written rather than restating it.
+
+Sub agents running a wave in parallel do **not** write `test-script.md`. Each
+returns its `## MM — Task title` section with the boxes already ticked, since it
+ran the steps. The session that spawned the wave appends those sections in
+task-number order and reuses a `## Setup` step already written rather than
+restating it — a parallel agent cannot see its siblings' Setup steps, so only
+the spawning session can dedupe them. The spawning session transcribes a tick;
+it never authors one. A box is ticked only after the step has actually been run.
 
 Every line is a checkbox holding one concrete action and the observable result
 it must produce — a command and its output, data to seed, a request with its
