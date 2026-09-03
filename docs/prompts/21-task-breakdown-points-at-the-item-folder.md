@@ -1,6 +1,6 @@
 # Goal: Strip the copied artifacts out of task files — the breakdown links the roadmap item folder instead, and the review skill audits against it
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 **Run:** sequential after 19 — the task file's `## References` must point at a
 folder layout that already exists. Parallel with 20, 23 and 25: no shared files.

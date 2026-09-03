@@ -1,6 +1,6 @@
 # Goal: Teach `roadmap-sync.mjs` that a roadmap item is a folder whose `README.md` carries the header, and convert every fixture and golden file to the new shape
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 **Run:** sequential after 19 — the folder layout has to be settled before the
 parser encodes it. Parallel with 20, 21, 22 and 25: this stage touches only the

@@ -1,6 +1,6 @@
 # Goal: Make task acceptance require a per-item `test-script.md` runbook alongside the ticked criteria, and gate landing on both
 
-**Status:** not executed
+**Status:** executed on 2026-08-30
 **Rating:** —
 
 ## Context

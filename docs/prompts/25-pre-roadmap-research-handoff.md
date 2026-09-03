@@ -1,6 +1,6 @@
 # Goal: Update `msg-pre-roadmap` so its research findings flow into the roadmap item's Technical References section
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 **Run:** sequential after 19 — it references the item's new section names.
 Parallel with 20, 21, 22, 23 and 24: this stage touches one file nobody else

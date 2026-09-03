@@ -1,6 +1,6 @@
 # Goal: Add a temporary `msg migrate-roadmap` command that converts an existing repo's single-file roadmap items into the folder shape
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 **Run:** sequential after 19 and 23 — it produces the shape prompt 19 defines,
 and prompt 23's engine is what has to accept its output (the engine also prints a

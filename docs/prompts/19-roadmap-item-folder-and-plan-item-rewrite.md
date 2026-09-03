@@ -1,6 +1,6 @@
 # Goal: Turn a roadmap item into a folder and rewrite `msg-roadmap-plan-item` to fill it — richer prose sections, an optional front-end reference, a web investigator subagent, and the three artifact skills invoked at planning time
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 **Run:** sequential — first stage of the refactor. Prompts 20, 21, 22, 23 and 25
 define themselves against the folder shape this prompt fixes, so nothing else

@@ -1,6 +1,6 @@
 # Goal: Point `msg-wireframes`, `msg-sequence-diagrams` and `msg-api-contracts` at the roadmap item folder instead of the task file, and make wireframes simpler
 
-**Status:** not executed
+**Status:** executed on 2026-08-31
 **Rating:** —
 **Run:** sequential after 19 — the folder shape has to exist before these three
 skills can write into it. Parallel with 21, 22, 23 and 25: no shared files.
