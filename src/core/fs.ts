@@ -5,11 +5,13 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { dirname, relative } from 'node:path';
 
 import { normalise } from './classify';
+import { classifyGitignore, buildGitignoreBlock, type GitignoreGroup } from './gitignore';
 import { mergeBranchGuardHooks } from './settingsJson';
 
 /**
@@ -20,10 +22,13 @@ import { mergeBranchGuardHooks } from './settingsJson';
  * `updated` and `unchanged` are the msg-owned counterparts of `kept`: a path
  * msg owns has no "yours" to lose, so it either needed rewriting or already
  * matched.
+ *
+ * `removed` is `.gitignore`-only: unlike everything else, a re-run can shrink
+ * a msg-owned entry away to nothing rather than only ever adding to it.
  */
 export interface Change {
   readonly path: string;
-  readonly action: 'created' | 'appended' | 'kept' | 'updated' | 'unchanged';
+  readonly action: 'created' | 'appended' | 'kept' | 'updated' | 'unchanged' | 'removed';
 }
 
 export class Recorder {
@@ -127,4 +132,65 @@ export class Recorder {
     appendFileSync(path, block, 'utf8');
     this.record(path, 'appended');
   }
+
+  /**
+   * Rewrite `.gitignore`'s block to hold exactly `groups`, unlike
+   * `createOrAppend`: a re-run doesn't skip once the marker exists, it
+   * replaces the block so a group dropped from the picks loses its lines. An
+   * edited block is left alone entirely, `groups` or not — see
+   * `classifyGitignore`.
+   */
+  gitignore(
+    path: string,
+    groups: readonly GitignoreGroup[],
+    allowed: readonly GitignoreGroup[],
+  ): void {
+    const state = classifyGitignore(path, allowed);
+
+    if (state.outcome === 'kept-modified') {
+      this.record(path, 'kept');
+      return;
+    }
+
+    // `absent` covers both "no file" and "a file with no marker of ours" —
+    // `state.content` is only meaningful for strip/remove, so read fresh.
+    const withoutBlock = state.outcome === 'absent' ? readIfPresent(path) : state.content;
+
+    if (groups.length === 0) {
+      if (state.outcome === 'absent') return; // nothing of ours there, nothing to do
+      if (withoutBlock.trim() === '') {
+        rmSync(path, { force: true });
+        this.record(path, 'removed');
+      } else {
+        writeFileSync(path, withoutBlock, 'utf8');
+        this.record(path, 'updated');
+      }
+      return;
+    }
+
+    const block = buildGitignoreBlock(groups);
+    if (state.outcome === 'absent' && withoutBlock === '') {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, block.replace(/^\n+/, ''), 'utf8');
+      this.record(path, 'created');
+      return;
+    }
+    if (state.outcome === 'absent') {
+      appendFileSync(path, block, 'utf8');
+      this.record(path, 'appended');
+      return;
+    }
+
+    const rewritten = withoutBlock.trim() === '' ? block.replace(/^\n+/, '') : withoutBlock + block;
+    if (rewritten === readFileSync(path, 'utf8')) {
+      this.record(path, 'unchanged');
+      return;
+    }
+    writeFileSync(path, rewritten, 'utf8');
+    this.record(path, 'updated');
+  }
+}
+
+function readIfPresent(path: string): string {
+  return existsSync(path) ? readFileSync(path, 'utf8') : '';
 }

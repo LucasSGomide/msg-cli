@@ -34,9 +34,10 @@ not called `msg-*` is yours and is never touched.
 ## Commands
 
 ```sh
-msg init [--shape api|web|both|docs-only] [--areas a,b] [--auth|--no-auth] [--seed|--no-seed] [--root .] [-y]
+msg init [--shape api|web|both|docs-only] [--areas a,b] [--auth|--no-auth] [--seed|--no-seed] [--gitignore docs,skills,hooks,makefile|all] [--no-gitignore] [--root .] [-y]
 msg check [--root .]
 msg add-area <slug> [--seed] [--root .]
+msg uninstall [--dry-run] [--root .] [-y]
 ```
 
 `init` detects the project shape from its layout and offers that as the default.
@@ -47,6 +48,22 @@ given**: `init` asks whether the project needs it (for any shape but
 `docs-only`), and answering no leaves out the `auth` area entirely — no sessions,
 guards or sign-in in the seeded docs. `--no-auth` answers it up front; the
 default is to include it. Add it later with `msg add-area auth`.
+
+### Ignoring the generated paths
+
+Inside a git repository, `init` also offers to add what it just wrote to
+`.gitignore` — a checklist of four groups (`docs`, `skills`, `hooks`,
+`makefile`), nothing checked by default, so checking nothing ignores nothing.
+`--shape skills-only` only ever offers the skills it installed, all or
+nothing. `--gitignore docs,skills` (or `--gitignore all`) answers it without a
+prompt; `--no-gitignore` skips the step entirely.
+
+Everything msg adds lives inside one marker block appended to the end of the
+file — the same mechanism the Makefile and `CLAUDE.md` blocks use — so
+re-running `init` with different picks rewrites the block rather than piling
+lines up, and a block you've edited by hand is left alone completely.
+`uninstall` asks about it separately from the rest of the scaffold, since you
+may want to keep the ignores, or drop them, independently of everything else.
 
 ## The workflow
 

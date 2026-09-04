@@ -9,6 +9,13 @@ import {
   describeSkills,
   type ScaffoldEntry,
 } from './description';
+import {
+  GITIGNORE_GROUPS_FULL,
+  GITIGNORE_GROUPS_SKILLS_ONLY,
+  GITIGNORE_PATH,
+  classifyGitignore,
+  type GitignoreGroup,
+} from './gitignore';
 import { MANIFEST, manifestAreas, readRecordedVersion, versionMismatchMessage } from './manifest';
 import { stripBranchGuardHooks } from './settingsJson';
 import { PORTABLE_SKILLS } from './templates';
@@ -62,6 +69,7 @@ export function buildPlan(root: string, running: string): PlanResult {
   for (const entry of describeScaffold({ areas, seed: false, version: running })) {
     entries.push(plan(root, entry));
   }
+  entries.push(gitignoreEntry(root, GITIGNORE_GROUPS_FULL));
 
   // Directories `init` created. `scripts/` is deliberately absent: projects keep
   // their own scripts there, so it stays even when it ends up empty.
@@ -100,6 +108,11 @@ function buildSkillsOnlyPlan(root: string): PlanResult {
   if (entries.every((entry) => entry.outcome === 'absent')) {
     return { ok: false, error: `error: no ${MANIFEST} — nothing here was scaffolded by msg` };
   }
+
+  // Added after the all-absent check above: a stray gitignore block with no
+  // skill left to justify it must not make an otherwise-untouched workspace
+  // look scaffolded.
+  entries.push(gitignoreEntry(root, GITIGNORE_GROUPS_SKILLS_ONLY));
 
   const { folders, warnings } = pruneFolders(root, entries, new Set(['.claude', '.claude/skills']));
   return { ok: true, plan: { entries, folders, warnings } };
@@ -145,6 +158,18 @@ function pruneFolders(
   folders.sort((a, b) => b.split('/').length - a.split('/').length);
 
   return { folders, warnings };
+}
+
+/**
+ * `.gitignore` isn't part of `describeScaffold` — the block it holds depends
+ * on a checklist answer nothing records, not on `areas`/`seed`/`version` — so
+ * it is classified on its own against every group `allowed` could offer.
+ */
+function gitignoreEntry(root: string, allowed: readonly GitignoreGroup[]): PlanEntry {
+  const { outcome, content } = classifyGitignore(join(root, GITIGNORE_PATH), allowed);
+  return outcome === 'strip'
+    ? { path: GITIGNORE_PATH, outcome, content }
+    : { path: GITIGNORE_PATH, outcome };
 }
 
 function plan(root: string, entry: ScaffoldEntry): PlanEntry {

@@ -107,7 +107,10 @@ describe('buildPlan', () => {
     const root = await scaffolded('both');
     const plan = planOf(root);
 
+    // `.gitignore` is the one entry `init` never touches on its own — it needs
+    // a checklist answer or a --gitignore flag, neither given here.
     for (const entry of plan.entries) {
+      if (entry.path === '.gitignore') continue;
       expect(entry.outcome, entry.path).toBe('remove');
     }
     expect(outcomeFor(plan, 'project.yml')).toBe('remove');
@@ -497,5 +500,109 @@ describe('uninstall, against a healed manifest', () => {
       '  remove  project.yml — hand-edited by design, removed regardless',
     );
     expect(existsSync(join(root, 'project.yml'))).toBe(false);
+  });
+});
+
+describe('uninstall and .gitignore', () => {
+  const GITIGNORE = '.gitignore';
+
+  it('is absent, and prints no line, when init never touched it', async () => {
+    const root = await scaffolded();
+    const plan = planOf(root);
+    expect(outcomeFor(plan, GITIGNORE)).toBe('absent');
+
+    const result = await uninstall({ root, dryRun: true }, VERSION);
+    expect(result.out.join('\n')).not.toContain(GITIGNORE);
+  });
+
+  it('deletes a .gitignore msg created, with -y', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+    expect(existsSync(join(root, GITIGNORE))).toBe(true);
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(existsSync(join(root, GITIGNORE))).toBe(false);
+    expect(result.out.join('\n')).toContain(`removed the msg block from ${GITIGNORE}`);
+  });
+
+  it('strips only the block, leaving the rest of a project-owned file', async () => {
+    const root = project();
+    writeFileSync(join(root, GITIGNORE), 'node_modules/\n', 'utf8');
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'makefile' }, VERSION);
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(readFileSync(join(root, GITIGNORE), 'utf8')).toBe('node_modules/\n');
+    expect(result.out.join('\n')).toContain(`strip   ${GITIGNORE}`);
+  });
+
+  it('reports an edited block as kept, and never removes it even with -y', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+    const edited = readFileSync(join(root, GITIGNORE), 'utf8').replace('docs/', 'dist/');
+    writeFileSync(join(root, GITIGNORE), edited, 'utf8');
+
+    const result = await uninstall({ root, yes: true }, VERSION);
+
+    expect(result.out.join('\n')).toContain(`kept    ${GITIGNORE} — yours, remove by hand`);
+    expect(readFileSync(join(root, GITIGNORE), 'utf8')).toBe(edited);
+  });
+
+  it('prints the strip line under --dry-run and removes nothing', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+
+    const result = await uninstall({ root, dryRun: true }, VERSION);
+
+    expect(result.out.join('\n')).toContain(`remove  ${GITIGNORE}`);
+    expect(existsSync(join(root, GITIGNORE))).toBe(true);
+  });
+
+  it('asks about .gitignore on its own, after the main confirmation', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.spyOn(prompts, 'isInteractive').mockReturnValue(true);
+    const askUninstall = vi.spyOn(prompts, 'askUninstall').mockResolvedValue(false);
+    const askGitignore = vi.spyOn(prompts, 'askGitignoreUninstall').mockResolvedValue(true);
+
+    const result = await uninstall({ root }, VERSION);
+
+    expect(askUninstall).toHaveBeenCalled();
+    expect(askGitignore).toHaveBeenCalled();
+    // The rest of the scaffold was declined, but the block still goes.
+    expect(result.code).toBe(0);
+    expect(existsSync(join(root, 'project.yml'))).toBe(true);
+    expect(existsSync(join(root, GITIGNORE))).toBe(false);
+  });
+
+  it('keeps .gitignore when only its own question is declined', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.spyOn(prompts, 'isInteractive').mockReturnValue(true);
+    vi.spyOn(prompts, 'askUninstall').mockResolvedValue(true);
+    vi.spyOn(prompts, 'askGitignoreUninstall').mockResolvedValue(false);
+
+    const result = await uninstall({ root }, VERSION);
+
+    expect(result.code).toBe(0);
+    expect(existsSync(join(root, 'project.yml'))).toBe(false);
+    expect(existsSync(join(root, GITIGNORE))).toBe(true);
+  });
+
+  it('never asks about .gitignore when init never touched it', async () => {
+    const root = await scaffolded();
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.spyOn(prompts, 'isInteractive').mockReturnValue(true);
+    vi.spyOn(prompts, 'askUninstall').mockResolvedValue(true);
+    const askGitignore = vi.spyOn(prompts, 'askGitignoreUninstall');
+
+    await uninstall({ root }, VERSION);
+
+    expect(askGitignore).not.toHaveBeenCalled();
   });
 });

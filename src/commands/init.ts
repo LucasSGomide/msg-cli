@@ -1,6 +1,14 @@
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import { UsageError, parseAreas, type AreaSlug } from '../core/areas';
+import {
+  GITIGNORE_GROUPS_FULL,
+  GITIGNORE_GROUPS_SKILLS_ONLY,
+  GITIGNORE_PATH,
+  isGitRepo,
+  parseGitignoreGroups,
+  type GitignoreGroup,
+} from '../core/gitignore';
 import {
   areasForShape,
   detectShape,
@@ -11,7 +19,15 @@ import {
 } from '../core/shapes';
 import { findAncestorManifest, healManifest, scaffold, scaffoldSkills } from '../core/scaffold';
 import { parsePortableSkills, type PortableSkill } from '../core/templates';
-import { askAuth, askSeed, askShape, askSkills, isInteractive } from '../prompts';
+import {
+  askAuth,
+  askGitignore,
+  askGitignoreSkills,
+  askSeed,
+  askShape,
+  askSkills,
+  isInteractive,
+} from '../prompts';
 
 export interface InitFlags {
   readonly shape?: string | undefined;
@@ -21,6 +37,8 @@ export interface InitFlags {
   readonly root?: string | undefined;
   readonly yes?: boolean | undefined;
   readonly skills?: string | undefined;
+  readonly gitignore?: string | undefined;
+  readonly noGitignore?: boolean | undefined;
 }
 
 export interface InitResult {
@@ -106,6 +124,17 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   const healed = healManifest(root);
   const rec = scaffold({ root, areas, seed, version });
 
+  const gitignoreGroups = await resolveGitignoreGroups(
+    flags,
+    root,
+    interactive,
+    GITIGNORE_GROUPS_FULL,
+    askGitignore,
+  );
+  if (gitignoreGroups !== null) {
+    rec.gitignore(join(root, GITIGNORE_PATH), gitignoreGroups, GITIGNORE_GROUPS_FULL);
+  }
+
   // A manifest that was healed was appended to, not kept: the scaffold reports
   // the same path as `kept` because it never overwrites, and reporting both
   // verbs for one path would contradict itself.
@@ -124,6 +153,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   const appended = changes.filter((c) => c.action === 'appended');
   const updated = changes.filter((c) => c.action === 'updated');
   const kept = changes.filter((c) => c.action === 'kept');
+  const removed = changes.filter((c) => c.action === 'removed');
 
   for (const change of created) out.push(`  created ${change.path}`);
   for (const change of appended) out.push(`  appended ${change.path}`);
@@ -134,14 +164,40 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   // Reported rather than silent: the never-overwrite rule means the user's own
   // copy won, and they should know which.
   for (const change of kept) out.push(`  kept    ${change.path} (yours)`);
+  // `.gitignore`-only: a group dropped from the picks can shrink the block away.
+  for (const change of removed) out.push(`  removed ${change.path}`);
 
-  if (created.length === 0 && appended.length === 0 && updated.length === 0) {
+  if (
+    created.length === 0 &&
+    appended.length === 0 &&
+    updated.length === 0 &&
+    removed.length === 0
+  ) {
     out.push('  nothing to do — the project is already set up');
   } else {
     out.push('', '  Next: /msg-roadmap-plan-item to turn an idea into a roadmap item.');
   }
 
   return { code: 0, out, err };
+}
+
+/**
+ * `--gitignore`/`--no-gitignore` drive the step without a terminal; otherwise
+ * it's asked when interactive. `null` means "leave `.gitignore` untouched" —
+ * not a git repo, `--no-gitignore`, or no flag and nothing to ask on.
+ */
+async function resolveGitignoreGroups(
+  flags: InitFlags,
+  root: string,
+  interactive: boolean,
+  allowed: readonly GitignoreGroup[],
+  ask: () => Promise<readonly GitignoreGroup[]>,
+): Promise<readonly GitignoreGroup[] | null> {
+  if (!isGitRepo(root)) return null;
+  if (flags.noGitignore === true) return null;
+  if (flags.gitignore !== undefined) return parseGitignoreGroups(flags.gitignore, allowed);
+  if (interactive) return ask();
+  return null;
 }
 
 interface SkillsOnlyOptions {
@@ -172,16 +228,31 @@ async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
 
   const rec = scaffoldSkills(root, skills);
 
+  const gitignoreGroups = await resolveGitignoreGroups(
+    flags,
+    root,
+    interactive,
+    GITIGNORE_GROUPS_SKILLS_ONLY,
+    async () => ((await askGitignoreSkills()) ? GITIGNORE_GROUPS_SKILLS_ONLY : []),
+  );
+  if (gitignoreGroups !== null) {
+    rec.gitignore(join(root, GITIGNORE_PATH), gitignoreGroups, GITIGNORE_GROUPS_SKILLS_ONLY);
+  }
+
   out.push('  shape   skills-only');
   out.push(`  skills  ${skills.join(', ')}`);
 
   const created = rec.changes.filter((c) => c.action === 'created');
   const updated = rec.changes.filter((c) => c.action === 'updated');
+  const kept = rec.changes.filter((c) => c.action === 'kept');
+  const removed = rec.changes.filter((c) => c.action === 'removed');
 
   for (const change of created) out.push(`  created ${change.path}`);
   for (const change of updated) out.push(`  updated ${change.path} (ours)`);
+  for (const change of kept) out.push(`  kept    ${change.path} (yours)`);
+  for (const change of removed) out.push(`  removed ${change.path}`);
 
-  if (created.length === 0 && updated.length === 0) {
+  if (created.length === 0 && updated.length === 0 && removed.length === 0) {
     out.push('  nothing to do — the project is already set up');
   }
 

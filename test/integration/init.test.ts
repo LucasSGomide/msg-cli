@@ -712,3 +712,174 @@ describe('init, healing a manifest missing a top-level key', () => {
     expect(result.out.join('\n')).toContain('requirementsFile -> docs/requirements.md  ok');
   });
 });
+
+describe('init and .gitignore', () => {
+  function noGit(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'msg-init-nogit-'));
+    dirs.push(dir);
+    return dir;
+  }
+
+  it('leaves .gitignore untouched with neither flag and no terminal to ask on', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false }, VERSION);
+    expect(listFiles(root)).not.toContain('.gitignore');
+  });
+
+  it('creates .gitignore holding just the chosen groups', async () => {
+    const root = project();
+    const result = await init(
+      { root, shape: 'docs-only', seed: false, gitignore: 'docs,skills' },
+      VERSION,
+    );
+
+    const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
+    expect(gitignore).toContain('docs/');
+    expect(gitignore).toContain('project.yml');
+    expect(gitignore).toContain('.claude/skills/msg-*');
+    expect(gitignore).not.toContain('Makefile\n');
+    expect(gitignore).not.toContain('branch-guard-pre.sh');
+    expect(result.out.join('\n')).toContain('created .gitignore');
+  });
+
+  it('"all" picks every group', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'all' }, VERSION);
+
+    const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
+    for (const line of ['docs/', '.claude/skills/msg-*', 'Makefile', 'branch-guard-pre.sh']) {
+      expect(gitignore, line).toContain(line);
+    }
+  });
+
+  it('checking nothing ignores nothing, and writes no file', async () => {
+    const root = project();
+    const result = await init({ root, shape: 'docs-only', seed: false, gitignore: '' }, VERSION);
+
+    expect(listFiles(root)).not.toContain('.gitignore');
+    expect(result.out.join('\n')).not.toContain('.gitignore');
+  });
+
+  it('appends to a .gitignore the project already owns, keeping its lines', async () => {
+    const root = project();
+    writeFileSync(join(root, '.gitignore'), 'node_modules/\n', 'utf8');
+
+    const result = await init(
+      { root, shape: 'docs-only', seed: false, gitignore: 'makefile' },
+      VERSION,
+    );
+
+    const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
+    expect(gitignore.startsWith('node_modules/\n')).toBe(true);
+    expect(gitignore).toContain('Makefile');
+    expect(result.out.join('\n')).toContain('appended .gitignore');
+  });
+
+  it('--no-gitignore skips the step even with an existing .gitignore', async () => {
+    const root = project();
+    writeFileSync(join(root, '.gitignore'), 'node_modules/\n', 'utf8');
+
+    await init({ root, shape: 'docs-only', seed: false, noGitignore: true }, VERSION);
+
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toBe('node_modules/\n');
+  });
+
+  it('never touches .gitignore outside a git repository', async () => {
+    const root = noGit();
+
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'all' }, VERSION);
+
+    expect(listFiles(root)).not.toContain('.gitignore');
+  });
+
+  it('re-running with different picks rewrites the block to match', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs,skills' }, VERSION);
+
+    const result = await init(
+      { root, shape: 'docs-only', seed: false, gitignore: 'makefile' },
+      VERSION,
+    );
+
+    const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
+    expect(gitignore).toContain('Makefile');
+    expect(gitignore).not.toContain('docs/');
+    expect(gitignore).not.toContain('.claude/skills/msg-*');
+    expect(result.out.join('\n')).toContain('updated .gitignore (ours)');
+  });
+
+  it('re-running with the same picks reports nothing new', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+    const before = readFileSync(join(root, '.gitignore'), 'utf8');
+
+    const result = await init(
+      { root, shape: 'docs-only', seed: false, gitignore: 'docs' },
+      VERSION,
+    );
+
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toBe(before);
+    expect(result.out.join('\n')).not.toContain('.gitignore');
+  });
+
+  it('dropping every group shrinks an owned block away, leaving the rest of the file', async () => {
+    const root = project();
+    writeFileSync(join(root, '.gitignore'), 'node_modules/\n', 'utf8');
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'makefile' }, VERSION);
+
+    const result = await init({ root, shape: 'docs-only', seed: false, gitignore: '' }, VERSION);
+
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toBe('node_modules/\n');
+    expect(result.out.join('\n')).toContain('updated .gitignore (ours)');
+  });
+
+  it('dropping every group deletes a file msg created and nothing else holds', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'makefile' }, VERSION);
+
+    const result = await init({ root, shape: 'docs-only', seed: false, gitignore: '' }, VERSION);
+
+    expect(listFiles(root)).not.toContain('.gitignore');
+    expect(result.out.join('\n')).toContain('removed .gitignore');
+  });
+
+  it('never touches a block the user edited inside, whatever is picked', async () => {
+    const root = project();
+    await init({ root, shape: 'docs-only', seed: false, gitignore: 'docs' }, VERSION);
+    const edited = readFileSync(join(root, '.gitignore'), 'utf8').replace('docs/', 'dist/');
+    writeFileSync(join(root, '.gitignore'), edited, 'utf8');
+
+    const result = await init({ root, shape: 'docs-only', seed: false, gitignore: 'all' }, VERSION);
+
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toBe(edited);
+    expect(result.out.join('\n')).toContain('kept    .gitignore (yours)');
+  });
+});
+
+describe('init --shape skills-only and .gitignore', () => {
+  it('offers only the skills group, all or nothing', async () => {
+    const root = project();
+    const result = await init(
+      { root, shape: 'skills-only', skills: 'msg-grill-me', gitignore: 'skills' },
+      VERSION,
+    );
+
+    const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
+    expect(gitignore).toContain('.claude/skills/msg-*');
+    expect(result.out.join('\n')).toContain('created .gitignore');
+  });
+
+  it('"all" is the same as "skills" here', async () => {
+    const root = project();
+    await init({ root, shape: 'skills-only', skills: 'msg-grill-me', gitignore: 'all' }, VERSION);
+
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toContain('.claude/skills/msg-*');
+  });
+
+  it('rejects a group only the full scaffold offers', async () => {
+    const root = project();
+    await expect(
+      init({ root, shape: 'skills-only', skills: 'msg-grill-me', gitignore: 'docs' }, VERSION),
+    ).rejects.toThrow(/unknown --gitignore group/);
+  });
+});

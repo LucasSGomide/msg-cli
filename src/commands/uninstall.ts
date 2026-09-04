@@ -2,8 +2,9 @@ import { rmSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { UsageError } from '../core/areas';
-import { buildPlan, type Plan } from '../core/plan';
-import { askUninstall, isInteractive } from '../prompts';
+import { GITIGNORE_PATH } from '../core/gitignore';
+import { buildPlan, type Plan, type PlanEntry } from '../core/plan';
+import { askGitignoreUninstall, askUninstall, isInteractive } from '../prompts';
 
 export interface UninstallFlags {
   readonly root?: string | undefined;
@@ -17,10 +18,18 @@ export interface UninstallResult {
   readonly err: string[];
 }
 
+function actionable(entry: PlanEntry): boolean {
+  return entry.outcome === 'remove' || entry.outcome === 'strip';
+}
+
 /**
  * The inverse of `init`. Deletion is irreversible, so the whole plan is printed
  * before anything happens and confirmed once — and a file the user changed is
  * never removed, only named.
+ *
+ * `.gitignore` is confirmed separately from everything else: it is the one
+ * entry a user might reasonably keep even while removing the rest of the
+ * scaffold, or vice versa.
  */
 export async function uninstall(flags: UninstallFlags, version: string): Promise<UninstallResult> {
   const out: string[] = [];
@@ -36,7 +45,11 @@ export async function uninstall(flags: UninstallFlags, version: string): Promise
   const { plan } = result;
   out.push(...report(plan));
 
-  if (!plan.entries.some((e) => e.outcome === 'remove' || e.outcome === 'strip')) {
+  const gitignoreEntry = plan.entries.find((e) => e.path === GITIGNORE_PATH);
+  const mainDue = plan.entries.some((e) => e.path !== GITIGNORE_PATH && actionable(e));
+  const gitignoreDue = gitignoreEntry !== undefined && actionable(gitignoreEntry);
+
+  if (!mainDue && !gitignoreDue) {
     out.push('  nothing to remove — no scaffolded file is still ours');
     return { code: 0, out, err };
   }
@@ -45,6 +58,9 @@ export async function uninstall(flags: UninstallFlags, version: string): Promise
     out.push('', '  dry run — nothing was removed');
     return { code: 0, out, err };
   }
+
+  let removeMain = mainDue;
+  let removeGitignore = gitignoreDue;
 
   if (flags.yes !== true) {
     if (!isInteractive()) {
@@ -55,14 +71,27 @@ export async function uninstall(flags: UninstallFlags, version: string): Promise
     // been answered — which would put "Remove everything listed above?" above
     // an empty screen.
     flush(out);
-    if (!(await askUninstall())) {
-      out.push('  nothing was removed');
-      return { code: 2, out, err };
-    }
+    removeMain = mainDue && (await askUninstall());
+    // Asked after the main question, and independently of its answer — the
+    // block can go while the rest stays, or stay while the rest goes.
+    removeGitignore = gitignoreDue && (await askGitignoreUninstall());
   }
 
-  apply(root, plan);
-  out.push('', `  removed the msg scaffold from ${root}`);
+  if (!removeMain && !removeGitignore) {
+    out.push('  nothing was removed');
+    return { code: 2, out, err };
+  }
+
+  const lines: string[] = [];
+  if (removeMain) {
+    applyMain(root, plan);
+    lines.push(`  removed the msg scaffold from ${root}`);
+  }
+  if (removeGitignore && gitignoreEntry) {
+    applyGitignore(root, gitignoreEntry);
+    lines.push(`  removed the msg block from ${GITIGNORE_PATH}`);
+  }
+  out.push('', ...lines);
   return { code: 0, out, err };
 }
 
@@ -101,8 +130,10 @@ function report(plan: Plan): string[] {
   return lines;
 }
 
-function apply(root: string, plan: Plan): void {
+/** Every entry but `.gitignore`, which is applied on its own answer instead. */
+function applyMain(root: string, plan: Plan): void {
   for (const entry of plan.entries) {
+    if (entry.path === GITIGNORE_PATH) continue;
     const path = join(root, entry.path);
     if (entry.outcome === 'remove') rmSync(path, { force: true });
     if (entry.outcome === 'strip') writeFileSync(path, entry.content ?? '', 'utf8');
@@ -117,4 +148,10 @@ function apply(root: string, plan: Plan): void {
       // Not empty after all, or already gone. Either way the folder stays.
     }
   }
+}
+
+function applyGitignore(root: string, entry: PlanEntry): void {
+  const path = join(root, entry.path);
+  if (entry.outcome === 'remove') rmSync(path, { force: true });
+  if (entry.outcome === 'strip') writeFileSync(path, entry.content ?? '', 'utf8');
 }

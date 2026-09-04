@@ -1,6 +1,6 @@
 # Goal: Offer a `.gitignore` step in `msg init`, and a clean-up on `uninstall`
 
-**Status:** not executed
+**Status:** executed on 2026-09-04
 **Rating:** —
 
 ## Context

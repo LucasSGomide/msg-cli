@@ -1,7 +1,24 @@
-import { describe, expect, it, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { run } from '../../src/cli';
 import { readVersion } from '../../src/version';
+
+const dirs: string[] = [];
+
+function project(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'msg-cli-'));
+  dirs.push(dir);
+  mkdirSync(join(dir, '.git'), { recursive: true });
+  return dir;
+}
+
+afterEach(() => {
+  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
 
 function captureStdout() {
   const chunks: string[] = [];
@@ -47,6 +64,47 @@ describe('run', () => {
 
     expect(code).toBe(2);
     expect(err.chunks.join('')).toContain('unknown command');
+  });
+
+  it('rejects --gitignore and --no-gitignore together', async () => {
+    const root = project();
+    const err = captureStderr();
+    const out = captureStdout();
+    const code = await run([
+      'init',
+      '--shape',
+      'docs-only',
+      '--no-seed',
+      '--gitignore',
+      'docs',
+      '--no-gitignore',
+      '--root',
+      root,
+    ]);
+    err.restore();
+    out.restore();
+
+    expect(code).toBe(2);
+    expect(err.chunks.join('')).toContain('--gitignore and --no-gitignore contradict each other');
+  });
+
+  it('passes --gitignore through to init, end to end', async () => {
+    const root = project();
+    const out = captureStdout();
+    const code = await run([
+      'init',
+      '--shape',
+      'docs-only',
+      '--no-seed',
+      '--gitignore',
+      'makefile',
+      '--root',
+      root,
+    ]);
+    out.restore();
+
+    expect(code).toBe(0);
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toContain('Makefile');
   });
 });
 

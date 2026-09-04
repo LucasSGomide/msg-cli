@@ -23,6 +23,8 @@ const OPTIONS = {
   'no-auth': { type: 'boolean' },
   seed: { type: 'boolean' },
   'no-seed': { type: 'boolean' },
+  gitignore: { type: 'string' },
+  'no-gitignore': { type: 'boolean' },
   root: { type: 'string' },
   'dry-run': { type: 'boolean' },
   yes: { type: 'boolean', short: 'y' },
@@ -59,6 +61,10 @@ export async function run(argv: string[]): Promise<ExitCode> {
     }
     const auth = values.auth ? true : values['no-auth'] ? false : undefined;
 
+    if (values.gitignore !== undefined && values['no-gitignore']) {
+      throw new UsageError('--gitignore and --no-gitignore contradict each other');
+    }
+
     switch (command) {
       case 'init': {
         const result = await init(
@@ -68,6 +74,8 @@ export async function run(argv: string[]): Promise<ExitCode> {
             skills: values.skills,
             auth,
             seed,
+            gitignore: values.gitignore,
+            noGitignore: values['no-gitignore'],
             root: values.root,
             yes: values.yes,
           },

@@ -16,6 +16,11 @@ init options
   --no-auth       leave auth out — no sessions, guards or sign-in in the docs
   --seed          fill rule docs with the opinionated defaults
   --no-seed       leave rule docs empty (the default is to ask)
+  --gitignore <g> docs,skills,hooks,makefile or all — add their paths to
+                  .gitignore (asked when interactive; skills-only takes only
+                  skills or all)
+  --no-gitignore  leave .gitignore untouched (the default when not on a
+                  terminal and neither flag is given)
   --root <dir>    project root (default: cwd)
   -y, --yes       accept every detected default, never prompt
 
@@ -23,6 +28,11 @@ init options
   and the CLAUDE.md block, and instead writes just the picked skills under
   .claude/skills/ — for cherry-picking a portable skill without the rest of
   the planning workflow.
+
+  The .gitignore step only ever runs inside a git repository, and only ever
+  touches its own marker block — appended once, then rewritten to match
+  whatever is picked on each later run. A block you've edited by hand is left
+  alone entirely.
 
 uninstall options
   --root <dir>    project root (default: cwd)

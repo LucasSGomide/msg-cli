@@ -1,7 +1,8 @@
 import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts';
 
-import { PORTABLE_SKILLS, type PortableSkill } from './core/templates';
+import { GITIGNORE_GROUPS, GITIGNORE_GROUP_ORDER, type GitignoreGroup } from './core/gitignore';
 import type { Shape } from './core/shapes';
+import { PORTABLE_SKILLS, type PortableSkill } from './core/templates';
 
 export function isInteractive(): boolean {
   return Boolean(process.stdin.isTTY && process.stdout.isTTY);
@@ -100,6 +101,55 @@ export async function askMigrateRoadmap(): Promise<boolean> {
       message: 'Move the files listed above?',
       active: 'Move them',
       inactive: 'Leave them alone',
+      initialValue: false,
+    }),
+  );
+}
+
+/**
+ * Nothing is pre-checked: checking nothing means ignore nothing, and a stray
+ * Enter must not silently add lines to a file `init` doesn't own.
+ */
+export async function askGitignore(): Promise<GitignoreGroup[]> {
+  return unwrap(
+    await multiselect({
+      message: 'Add the generated paths to .gitignore?',
+      options: GITIGNORE_GROUP_ORDER.map((group) => ({
+        value: group,
+        label: GITIGNORE_GROUPS[group].label,
+      })),
+      required: false,
+      initialValues: [],
+    }),
+  );
+}
+
+/**
+ * The `--shape skills-only` counterpart of `askGitignore`: there is only one
+ * group to offer, so a yes/no question replaces the checklist.
+ */
+export async function askGitignoreSkills(): Promise<boolean> {
+  return unwrap(
+    await confirm({
+      message: 'Add the installed skills to .gitignore?',
+      active: 'Yes',
+      inactive: 'No',
+      initialValue: false,
+    }),
+  );
+}
+
+/**
+ * Asked in `uninstall`, after `askUninstall` and independently of its answer —
+ * a user may want the rest of the scaffold gone while keeping the ignores, or
+ * the reverse.
+ */
+export async function askGitignoreUninstall(): Promise<boolean> {
+  return unwrap(
+    await confirm({
+      message: 'Remove the msg block from .gitignore too?',
+      active: 'Remove it',
+      inactive: 'Leave it',
       initialValue: false,
     }),
   );
