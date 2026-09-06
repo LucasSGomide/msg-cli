@@ -1,6 +1,6 @@
 # Goal: Make `msg` harness-agnostic so `init` and `uninstall` support both Claude Code and Codex
 
-**Status:** not executed
+**Status:** executed on 2026-09-06
 **Rating:** —
 
 ## Context
