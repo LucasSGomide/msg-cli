@@ -15,6 +15,11 @@ puts these skills on disk, so first-time setup is a shell command the user runs:
 npx @lucas-gomide/msg-cli init
 ```
 
+For a new interactive project the CLI asks which harness to configure. Use
+`--harness claude` or `--harness codex` to answer directly; non-interactive
+setup defaults to Claude for compatibility. A full scaffold records the answer
+as the top-level `harness` field in `project.yml`.
+
 What this skill is for is everything after that: adding an area, explaining what
 the manifest means, and diagnosing a failing check.
 

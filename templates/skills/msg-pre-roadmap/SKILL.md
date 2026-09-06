@@ -35,9 +35,9 @@ modules never share a number sequence.
    with one `AskUserQuestion` call: reuse the matching existing module
    (recommended, when one plausibly fits), or name a new one. Never assume —
    confirm even an obvious match.
-2. **Brainstorm.** Invoke `msg-brainstorm` for the feature idea. Let it run at
+2. **Brainstorm.** Invoke `/msg-brainstorm` for the feature idea. Let it run at
    its own stated defaults (`high` effort, `med` verbosity) — don't override.
-3. **Close gaps.** Invoke `msg-grill-me` at `high` effort / `med` verbosity,
+3. **Close gaps.** Invoke `/msg-grill-me` at `high` effort / `med` verbosity,
    stated explicitly, to walk whatever branches the brainstorm surfaced. Stop
    once the project view for this feature is settled.
 4. **Offer research.** One `AskUserQuestion` call: research common

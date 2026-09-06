@@ -35,7 +35,10 @@ input=$(cat)
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 [[ -z "$cmd" ]] && exit 0
 
-root="${CLAUDE_PROJECT_DIR:-.}"
+cwd=$(printf '%s' "$input" | jq -r '.cwd // empty')
+root="${CLAUDE_PROJECT_DIR:-${cwd:-.}}"
+# Codex runs repo hooks from the session cwd, which may be a subdirectory.
+root=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$root")
 git_c() { git -C "$root" "$@"; }
 git_c rev-parse --git-dir >/dev/null 2>&1 || exit 0
 

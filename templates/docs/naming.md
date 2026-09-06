@@ -110,7 +110,7 @@ Python and Node scripts sit outside the suffix rule — they are named by what t
 
 | Folder                            | Owns                                             | Test                                                        |
 | --------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
-| `.claude/skills/<skill>/scripts/` | a skill's own tooling                            | Nothing outside that skill runs or reads it                 |
+| `<agent-skill-dir>/<skill>/scripts/` | a skill's own tooling                         | Nothing outside that skill runs or reads it                 |
 | `scripts/`                        | repo tooling                                     | `make` invokes it, or `docs/` tells a human to run it       |
 | `tools/<thing>/`                  | a self-contained artefact with its own lifecycle | It is installed or shipped somewhere, not run from the repo |
 
@@ -127,7 +127,7 @@ its own folder makes every later `scripts/…` in that file ambiguous — the on
 prevent.
 
 **Known exception:** `scripts/extract_trees.py` writes
-`.claude/skills/tibia-idle-build/scripts/nodes.json`, so a repo script owns a file inside a skill.
+`<agent-skill-dir>/tibia-idle-build/scripts/nodes.json`, so a repo script owns a file inside a skill.
 It is accepted, not accidental — `docs/explorations/06-retire-the-markdown-folders.md` records it as
 a blocker. Do not add a second one.
 

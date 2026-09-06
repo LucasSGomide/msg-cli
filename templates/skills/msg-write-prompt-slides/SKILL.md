@@ -136,7 +136,7 @@ style rather than replacing the whole thing.
    - A lot missing (audience unknown, no takeaway, no slide list) → `high`
      effort.
    - Verbosity is always `med` — fixed, not inferred.
-4. **Invoke `msg-grill-me`** at the effort level from step 3 and `med`
+4. **Invoke `/msg-grill-me`** at the effort level from step 3 and `med`
    verbosity, stating both explicitly. Point it at exactly the missing
    template fields as the branches to walk — not a generic plan grill.
 5. **Assemble the prompt** from the original request plus the grill's

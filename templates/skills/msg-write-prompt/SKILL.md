@@ -78,7 +78,7 @@ Omit an inapplicable optional section entirely — no empty headings.
    - A lot missing (Goal vague, Context absent, Constraints unstated) →
      `high` effort.
    - Verbosity is always `med` — fixed, not inferred.
-5. **Invoke `msg-grill-me`** at the effort level from step 4 and `med`
+5. **Invoke `/msg-grill-me`** at the effort level from step 4 and `med`
    verbosity, stating both explicitly. Point it at exactly the missing
    template fields as the branches to walk — not a generic plan grill.
 6. **Assemble the prompt(s)** from the original request plus the grill's

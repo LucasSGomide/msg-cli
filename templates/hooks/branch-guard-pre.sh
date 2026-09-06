@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse guard: block Write/Edit/MultiEdit to code — application source,
+# PreToolUse guard: block file-edit tools touching code — application source,
 # libraries, tests, and build/manifest/config files — until this session has
 # created a dedicated branch (GitButler if set up in the repo, else plain git).
 # Documentation and planning edits are never guarded. branch-guard-post.sh sets
@@ -9,21 +9,39 @@ set -euo pipefail
 
 input=$(cat)
 file=$(echo "$input" | jq -r '.tool_input.file_path // empty')
+patch=$(echo "$input" | jq -r '.tool_input.command // empty')
 session=$(echo "$input" | jq -r '.session_id // empty')
 
-[[ -z "$file" ]] && exit 0
+# Claude supplies one file_path. Codex's apply_patch supplies the whole patch
+# in tool_input.command, so read every file header without trusting prose in the
+# patch body as a path.
+files=()
+if [[ -n "$file" ]]; then
+  files+=("$file")
+elif [[ -n "$patch" ]]; then
+  while IFS= read -r path; do
+    [[ -n "$path" ]] && files+=("$path")
+  done < <(
+    printf '%s\n' "$patch" \
+      | sed -nE -e 's/^\*\*\* (Add|Update|Delete) File: //p' -e 's/^\*\*\* Move to: //p'
+  )
+fi
+
+[[ ${#files[@]} -eq 0 ]] && exit 0
 
 # What counts as code. Kept deliberately small and readable — a path segment
 # under a source/test tree, or a build/manifest/config file by name.
 guarded=0
-base=$(basename -- "$file")
-case "$file" in
-  */src/*|*/lib/*|*/app/*|*/test/*|*/tests/*) guarded=1 ;;
-esac
-case "$base" in
-  package.json|package-lock.json|pnpm-lock.yaml|yarn.lock|Makefile) guarded=1 ;;
-  *.config.*) guarded=1 ;;
-esac
+for file in "${files[@]}"; do
+  base=$(basename -- "$file")
+  case "/${file#/}" in
+    */src/*|*/lib/*|*/app/*|*/test/*|*/tests/*) guarded=1 ;;
+  esac
+  case "$base" in
+    package.json|package-lock.json|pnpm-lock.yaml|yarn.lock|Makefile) guarded=1 ;;
+    *.config.*) guarded=1 ;;
+  esac
+done
 
 [[ $guarded -eq 0 ]] && exit 0
 
