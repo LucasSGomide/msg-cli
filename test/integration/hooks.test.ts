@@ -413,8 +413,9 @@ describe('retire-breakdown-post.sh', () => {
       branchName?: string;
       deleteBranch?: boolean;
       mergeIt?: boolean;
+      layout?: 'flat' | 'folder';
     } = {},
-  ): { root: string } {
+  ): { root: string; docPath: string } {
     const {
       status = 'done',
       marker = '',
@@ -422,11 +423,15 @@ describe('retire-breakdown-post.sh', () => {
       branchName = 'feat/04-profiles',
       deleteBranch = false,
       mergeIt = true,
+      layout = 'flat',
     } = opts;
+
+    // flat: `docs/roadmap/NN-slug.md`; folder: `docs/roadmap/NN-slug/README.md`.
+    const docPath = layout === 'folder' ? 'docs/roadmap/04-profiles/README.md' : DOC;
 
     const { root, git } = repo();
     const files: Record<string, string> = {
-      [DOC]: roadmapDoc(status, marker),
+      [docPath]: roadmapDoc(status, marker),
       'docs/roadmap/README.md': '# Roadmap\n\n## Ready\n',
       'project.yml': 'structure:\n  roadmap: docs/roadmap/\n  tasks: docs/tasks/\n',
     };
@@ -449,7 +454,7 @@ describe('retire-breakdown-post.sh', () => {
       git('update-ref', 'refs/remotes/origin/main', 'refs/heads/main');
     }
     if (deleteBranch) git('branch', '-qD', branchName);
-    return { root };
+    return { root, docPath };
   }
 
   const run = (root: string, command: string, extra: Record<string, unknown> = {}) =>
@@ -470,6 +475,20 @@ describe('retire-breakdown-post.sh', () => {
     expect(r.code).toBe(0);
     expect(doc(root)).toMatch(/\*\*Status:\*\* done · \*\*Landed:\*\* \d{4}-\d{2}-\d{2}/);
     expect(r.stderr).toContain('retire-breakdown: stamped');
+  });
+
+  it('stamps a folder-layout item at NN-slug/README.md', () => {
+    const { root, docPath } = landed({ layout: 'folder' });
+
+    const r = run(root, 'but land feat/04-profiles --yes');
+
+    expect(r.code).toBe(0);
+    expect(readFileSync(join(root, docPath), 'utf8')).toMatch(
+      /\*\*Status:\*\* done · \*\*Landed:\*\* \d{4}-\d{2}-\d{2}/,
+    );
+    // the slug is the folder name, so the retire hint points at the task folder
+    expect(r.stderr).toContain('docs/roadmap/04-profiles/README.md');
+    expect(r.stderr).toContain('docs/tasks/04-profiles/');
   });
 
   it('stamps **Merged:** after a `git merge`', () => {

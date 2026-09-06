@@ -101,12 +101,22 @@ try_stamp() {
   num_nopad=$((10#$num))
   pad=$(printf '%02d' "$num_nopad")
 
+  # The item doc is either a flat `NN-slug.md` or a folder `NN-slug/README.md`.
+  # Try both, zero-padded before unpadded and flat file before folder README, so
+  # the pick stays deterministic; an unmatched glob stays literal and fails `-f`.
   doc=""
-  for cand in "$root/$roadmap_rel/$pad-"*.md "$root/$roadmap_rel/$num_nopad-"*.md; do
+  for cand in \
+    "$root/$roadmap_rel/$pad-"*.md "$root/$roadmap_rel/$pad-"*/README.md \
+    "$root/$roadmap_rel/$num_nopad-"*.md "$root/$roadmap_rel/$num_nopad-"*/README.md; do
     [[ -f "$cand" ]] && { doc="$cand"; break; }
   done
   [[ -n "$doc" ]] || return 0
-  slug=$(basename -- "$doc" .md)
+  # For a folder hit the slug is the item folder's name, never `README`.
+  if [[ "$doc" == */README.md ]]; then
+    slug=$(basename -- "$(dirname -- "$doc")")
+  else
+    slug=$(basename -- "$doc" .md)
+  fi
 
   header=$(awk 'NR>=2 && NR<=6 && /^\*\*/ { print; exit }' "$doc")
   [[ -n "$header" ]] || return 0
@@ -128,7 +138,7 @@ try_stamp() {
     { print }
   ' "$doc" >"$tmp" && mv "$tmp" "$doc"
 
-  echo "retire-breakdown: stamped **${verb}:** ${today} on ${roadmap_rel}/${slug}.md" >&2
+  echo "retire-breakdown: stamped **${verb}:** ${today} on ${doc#"$root"/}" >&2
   echo "  run 'make roadmap-sync', then /msg-roadmap-sync to retire ${tasks_rel}/${slug}/." >&2
 }
 
