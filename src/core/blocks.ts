@@ -11,7 +11,7 @@ export interface StripResult {
 }
 
 /**
- * The inverse of `createOrAppend`. `CLAUDE.md` and `Makefile` are appended to
+ * The inverse of `createOrAppend`. Project instructions and `Makefile` are appended to
  * files the project already owns, so this is the one place removal edits rather
  * than deletes — and the block's extent is exactly its marker pair, never a
  * guess. A missing marker means the user edited our block into something we

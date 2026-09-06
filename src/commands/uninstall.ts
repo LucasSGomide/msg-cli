@@ -1,15 +1,23 @@
-import { rmSync, rmdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { UsageError } from '../core/areas';
 import { GITIGNORE_PATH } from '../core/gitignore';
-import { buildPlan, type Plan, type PlanEntry } from '../core/plan';
-import { askGitignoreUninstall, askUninstall, isInteractive } from '../prompts';
+import { HARNESSES, parseHarnesses, type Harness } from '../core/harness';
+import { MANIFEST, readRecordedHarnesses } from '../core/manifest';
+import { buildPlan, detectSkillsOnlyHarnesses, type Plan, type PlanEntry } from '../core/plan';
+import {
+  askGitignoreUninstall,
+  askUninstall,
+  askUninstallHarnesses,
+  isInteractive,
+} from '../prompts';
 
 export interface UninstallFlags {
   readonly root?: string | undefined;
   readonly dryRun?: boolean | undefined;
   readonly yes?: boolean | undefined;
+  readonly harness?: string | undefined;
 }
 
 export interface UninstallResult {
@@ -36,7 +44,46 @@ export async function uninstall(flags: UninstallFlags, version: string): Promise
   const err: string[] = [];
   const root = resolve(flags.root ?? '.');
 
-  const result = buildPlan(root, version);
+  if (flags.harness !== undefined && parseHarnesses(flags.harness) === null) {
+    throw new UsageError(`unknown harness '${flags.harness}'. Known: ${HARNESSES.join(', ')}`);
+  }
+  let requestedHarnesses = flags.harness === undefined ? undefined : parseHarnesses(flags.harness)!;
+  const manifestPath = join(root, MANIFEST);
+  if (existsSync(manifestPath)) {
+    let recorded: Harness[];
+    try {
+      recorded = readRecordedHarnesses(readFileSync(manifestPath, 'utf8'));
+    } catch (error) {
+      err.push(`error: ${(error as Error).message}`);
+      return { code: 1, out, err };
+    }
+    if (
+      requestedHarnesses !== undefined &&
+      requestedHarnesses.some((harness) => !recorded.includes(harness))
+    ) {
+      throw new UsageError(
+        `--harness ${requestedHarnesses.join(',')} conflicts with ${MANIFEST}, which records ${recorded.join(', ')}. Omit the flag or select only installed harnesses`,
+      );
+    }
+    if (
+      requestedHarnesses === undefined &&
+      recorded.length > 1 &&
+      isInteractive() &&
+      flags.yes !== true
+    ) {
+      requestedHarnesses = await askUninstallHarnesses(recorded);
+    }
+  } else if (requestedHarnesses === undefined) {
+    const detected = detectSkillsOnlyHarnesses(root);
+    if (detected.length > 1 && isInteractive() && flags.yes !== true) {
+      requestedHarnesses = await askUninstallHarnesses(detected);
+    }
+  }
+
+  if (requestedHarnesses !== undefined && requestedHarnesses.length === 0) {
+    return { code: 2, out: ['  nothing was selected'], err };
+  }
+  const result = buildPlan(root, version, requestedHarnesses);
   if (!result.ok) {
     err.push(result.error);
     return { code: 1, out, err };

@@ -2,6 +2,7 @@
 // never disagree about what a manifest says.
 import { parseSimpleYaml } from '../../templates/scripts/roadmap-sync.mjs';
 import { AREAS, AREA_SLUGS, type AreaSlug } from './areas';
+import { isHarness, type Harness } from './harness';
 
 export const MANIFEST = 'project.yml';
 
@@ -50,8 +51,19 @@ const HEADER = `# Project manifest. The msg-roadmap skills read this and nothing
 # \`requirementsFile\` is different: it's a single append-only log of user needs
 # and functional requirements, not a rule doc.`;
 
-export function renderManifest(areas: readonly AreaSlug[], version: string): string {
-  const lines = [HEADER, '', `msg_version: ${version}`, '', 'structure:'];
+export function renderManifest(
+  areas: readonly AreaSlug[],
+  version: string,
+  harnesses: readonly Harness[] = ['claude'],
+): string {
+  const lines = [
+    HEADER,
+    '',
+    `msg_version: ${version}`,
+    `harnesses: [${harnesses.join(', ')}]`,
+    '',
+    'structure:',
+  ];
   for (const [key, value] of STRUCTURE) lines.push(`  ${key}: ${value}`);
   lines.push('', 'areas:');
   for (const slug of areas) {
@@ -60,6 +72,51 @@ export function renderManifest(areas: readonly AreaSlug[], version: string): str
   }
   lines.push('', `requirementsFile: ${REQUIREMENTS_FILE}`);
   return `${lines.join('\n')}\n`;
+}
+
+/**
+ * Read the harness without reserialising the hand-edited manifest. Manifests
+ * written before this field existed are Claude projects by definition.
+ */
+export function readRecordedHarness(manifest: string): Harness {
+  const harnesses = readRecordedHarnesses(manifest);
+  if (harnesses.length !== 1) {
+    throw new Error(`${MANIFEST} records multiple harnesses; use readRecordedHarnesses instead`);
+  }
+  return harnesses[0]!;
+}
+
+/** Read all installed harnesses. The former singular field remains supported. */
+export function readRecordedHarnesses(manifest: string): Harness[] {
+  const parsed = parse(manifest);
+  const plural = parsed.get('harnesses');
+  if (plural !== undefined) {
+    const values = Array.isArray(plural)
+      ? plural
+      : typeof plural === 'string'
+        ? plural.split(',').map((value) => value.trim())
+        : [];
+    if (values.length > 0 && values.every((value) => isHarness(value))) {
+      return [...new Set(values)] as Harness[];
+    }
+    throw new Error(
+      `${MANIFEST} records unknown harnesses '${String(plural)}'. Known: claude, codex`,
+    );
+  }
+  const value = parsed.get('harness');
+  if (value === undefined || value === null || value === '') return ['claude'];
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (isHarness(trimmed)) return [trimmed];
+  }
+  throw new Error(`${MANIFEST} records unknown harness '${String(value)}'. Known: claude, codex`);
+}
+
+/** Update or add only the harness list, leaving all other manifest text intact. */
+export function replaceRecordedHarnesses(manifest: string, harnesses: readonly Harness[]): string {
+  const line = `harnesses: [${harnesses.join(', ')}]`;
+  if (/^harnesses:.*$/m.test(manifest)) return manifest.replace(/^harnesses:.*$/m, line);
+  return manifest.replace(/^(msg_version:.*\n)/m, `$1${line}\n`);
 }
 
 /**

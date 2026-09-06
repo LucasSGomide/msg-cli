@@ -5,6 +5,7 @@ import { UsageError } from './areas';
 import { stripBlock } from './blocks';
 import { normalise, type Outcome } from './classify';
 import { MAKEFILE_MARKERS } from './description';
+import { getHarness, type Harness } from './harness';
 
 /**
  * `.gitignore` reuses the Makefile's comment-based marker pair — both files
@@ -20,20 +21,19 @@ export const GITIGNORE_PATH = '.gitignore';
  * `describeScaffold` writes for it — see `src/core/description.ts` — so a
  * group here can only ever go stale alongside the scaffold it names.
  */
-export const GITIGNORE_GROUPS = {
-  docs: { label: 'docs', lines: ['docs/', 'project.yml', 'scripts/roadmap-sync.mjs'] },
-  skills: { label: 'skills', lines: ['.claude/skills/msg-*'] },
-  hooks: {
-    label: 'hooks',
-    lines: [
-      '.claude/hooks/branch-guard-pre.sh',
-      '.claude/hooks/branch-guard-post.sh',
-      '.claude/hooks/acceptance-criteria-gate.sh',
-      '.claude/hooks/retire-breakdown-post.sh',
-    ],
-  },
-  makefile: { label: 'Makefile', lines: ['Makefile'] },
-} as const satisfies Record<string, { label: string; lines: readonly string[] }>;
+function groupsFor(selected: Harness | readonly Harness[]) {
+  const harnesses = Array.isArray(selected) ? selected : [selected];
+  const adapters = harnesses.map(getHarness);
+  return {
+    docs: { label: 'docs', lines: ['docs/', 'project.yml', 'scripts/roadmap-sync.mjs'] },
+    skills: { label: 'skills', lines: adapters.flatMap((adapter) => adapter.gitignore.skills) },
+    hooks: { label: 'hooks', lines: adapters.flatMap((adapter) => adapter.gitignore.hooks) },
+    makefile: { label: 'Makefile', lines: ['Makefile'] },
+  } as const satisfies Record<string, { label: string; lines: readonly string[] }>;
+}
+
+/** Backwards-compatible labels and Claude paths for callers that only render prompts. */
+export const GITIGNORE_GROUPS = groupsFor('claude');
 
 export type GitignoreGroup = keyof typeof GITIGNORE_GROUPS;
 
@@ -81,9 +81,13 @@ export function parseGitignoreGroups(
 }
 
 /** Render the block for one selection, always in the same canonical order. */
-export function buildGitignoreBlock(groups: readonly GitignoreGroup[]): string {
+export function buildGitignoreBlock(
+  groups: readonly GitignoreGroup[],
+  harnesses: Harness | readonly Harness[] = 'claude',
+): string {
+  const definitions = groupsFor(harnesses);
   const lines = GITIGNORE_GROUP_ORDER.filter((g) => groups.includes(g)).flatMap(
-    (g) => GITIGNORE_GROUPS[g].lines,
+    (g) => definitions[g].lines,
   );
   const [START, END] = GITIGNORE_MARKERS;
   return `\n${START}\n${lines.join('\n')}\n${END}\n`;
@@ -117,6 +121,7 @@ export interface GitignoreState {
 export function classifyGitignore(
   path: string,
   allowed: readonly GitignoreGroup[],
+  harnesses: Harness | readonly Harness[] = 'claude',
 ): GitignoreState {
   if (!existsSync(path)) return { outcome: 'absent', content: '' };
 
@@ -125,7 +130,11 @@ export function classifyGitignore(
   if (!normalised.includes(GITIGNORE_MARKERS[0])) return { outcome: 'absent', content: raw };
 
   for (const groups of nonEmptySubsets(allowed)) {
-    const result = stripBlock(normalised, buildGitignoreBlock(groups), GITIGNORE_MARKERS);
+    const result = stripBlock(
+      normalised,
+      buildGitignoreBlock(groups, harnesses),
+      GITIGNORE_MARKERS,
+    );
     if (result.outcome === 'strip' || result.outcome === 'remove') {
       return { outcome: result.outcome, content: result.content };
     }

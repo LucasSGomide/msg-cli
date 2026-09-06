@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { UsageError, parseAreas, type AreaSlug } from '../core/areas';
@@ -9,6 +10,8 @@ import {
   parseGitignoreGroups,
   type GitignoreGroup,
 } from '../core/gitignore';
+import { getHarness, HARNESSES, parseHarnesses, type Harness } from '../core/harness';
+import { MANIFEST, readRecordedHarnesses } from '../core/manifest';
 import {
   areasForShape,
   detectShape,
@@ -23,6 +26,7 @@ import {
   askAuth,
   askGitignore,
   askGitignoreSkills,
+  askHarnesses,
   askSeed,
   askShape,
   askSkills,
@@ -39,6 +43,7 @@ export interface InitFlags {
   readonly skills?: string | undefined;
   readonly gitignore?: string | undefined;
   readonly noGitignore?: boolean | undefined;
+  readonly harness?: string | undefined;
 }
 
 export interface InitResult {
@@ -51,6 +56,10 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   const out: string[] = [];
   const err: string[] = [];
   const root = resolve(flags.root ?? '.');
+
+  if (flags.harness !== undefined && parseHarnesses(flags.harness) === null) {
+    throw new UsageError(`unknown harness '${flags.harness}'. Known: ${HARNESSES.join(', ')}`);
+  }
 
   if (flags.shape !== undefined && !isShape(flags.shape)) {
     throw new UsageError(
@@ -87,6 +96,8 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     throw new UsageError('no --shape or --areas given, and stdin is not a terminal to ask on');
   }
 
+  const harnesses = await resolveHarnesses(flags, root);
+
   let areas: AreaSlug[];
   let shape: Shape | null = null;
   let auth: boolean | null = null;
@@ -100,7 +111,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
       : ((flags.shape as Shape | undefined) ?? detected);
 
     if (shape === SKILLS_ONLY_SHAPE) {
-      return initSkillsOnly({ flags, interactive, out, root });
+      return initSkillsOnly({ flags, interactive, out, root, harnesses });
     }
 
     // Auth is included unless something says otherwise: the seeded stack docs
@@ -122,7 +133,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   // Before the scaffold, so everything downstream — and the user's next command
   // — reads a manifest that carries every key the skills expect.
   const healed = healManifest(root);
-  const rec = scaffold({ root, areas, seed, version });
+  const rec = scaffold({ root, areas, seed, version, harnesses });
 
   const gitignoreGroups = await resolveGitignoreGroups(
     flags,
@@ -132,7 +143,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     askGitignore,
   );
   if (gitignoreGroups !== null) {
-    rec.gitignore(join(root, GITIGNORE_PATH), gitignoreGroups, GITIGNORE_GROUPS_FULL);
+    rec.gitignore(join(root, GITIGNORE_PATH), gitignoreGroups, GITIGNORE_GROUPS_FULL, harnesses);
   }
 
   // A manifest that was healed was appended to, not kept: the scaffold reports
@@ -144,6 +155,7 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
     ...rec.changes.filter((change) => !healedPaths.has(change.path)),
   ];
 
+  out.push(`  harnesses ${harnesses.join(', ')}`);
   if (shape) out.push(`  shape   ${shape}`);
   if (auth !== null) out.push(`  auth    ${auth ? 'included' : 'not included'}`);
   out.push(`  areas   ${areas.join(', ')}`);
@@ -175,7 +187,10 @@ export async function init(flags: InitFlags, version: string): Promise<InitResul
   ) {
     out.push('  nothing to do — the project is already set up');
   } else {
-    out.push('', '  Next: /msg-roadmap-plan-item to turn an idea into a roadmap item.');
+    out.push(
+      '',
+      `  Next: ${getHarness(harnesses[0]!).skillReference('msg-roadmap-plan-item')} to turn an idea into a roadmap item.`,
+    );
   }
 
   return { code: 0, out, err };
@@ -205,16 +220,17 @@ interface SkillsOnlyOptions {
   readonly interactive: boolean;
   readonly out: string[];
   readonly root: string;
+  readonly harnesses: readonly Harness[];
 }
 
 /**
  * Picking the "skills only" shape bypasses areas, auth, seed, project.yml,
- * the docs/ folders, and the CLAUDE.md block entirely — it writes just the
- * picked skills' SKILL.md files, for a project that wants a portable skill
- * without the roadmap scaffold.
+ * the docs/ folders, and the project-instructions block entirely — it writes
+ * just the picked skills' SKILL.md files, for a project that wants a portable
+ * skill without the roadmap scaffold.
  */
 async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
-  const { flags, interactive, out, root } = options;
+  const { flags, interactive, out, root, harnesses } = options;
 
   let skills: PortableSkill[];
   if (flags.skills !== undefined) {
@@ -226,7 +242,7 @@ async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
     throw new UsageError('--shape skills-only needs --skills, or a terminal to ask on');
   }
 
-  const rec = scaffoldSkills(root, skills);
+  const rec = scaffoldSkills(root, skills, harnesses);
 
   const gitignoreGroups = await resolveGitignoreGroups(
     flags,
@@ -236,9 +252,15 @@ async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
     async () => ((await askGitignoreSkills()) ? GITIGNORE_GROUPS_SKILLS_ONLY : []),
   );
   if (gitignoreGroups !== null) {
-    rec.gitignore(join(root, GITIGNORE_PATH), gitignoreGroups, GITIGNORE_GROUPS_SKILLS_ONLY);
+    rec.gitignore(
+      join(root, GITIGNORE_PATH),
+      gitignoreGroups,
+      GITIGNORE_GROUPS_SKILLS_ONLY,
+      harnesses,
+    );
   }
 
+  out.push(`  harnesses ${harnesses.join(', ')}`);
   out.push('  shape   skills-only');
   out.push(`  skills  ${skills.join(', ')}`);
 
@@ -257,4 +279,23 @@ async function initSkillsOnly(options: SkillsOnlyOptions): Promise<InitResult> {
   }
 
   return { code: 0, out, err: [] };
+}
+
+async function resolveHarnesses(flags: InitFlags, root: string): Promise<Harness[]> {
+  const explicit = flags.harness === undefined ? undefined : parseHarnesses(flags.harness)!;
+  const manifestPath = join(root, MANIFEST);
+  if (existsSync(manifestPath)) {
+    let recorded: Harness[];
+    try {
+      recorded = readRecordedHarnesses(readFileSync(manifestPath, 'utf8'));
+    } catch (error) {
+      throw new UsageError((error as Error).message);
+    }
+    return explicit === undefined
+      ? recorded
+      : HARNESSES.filter((harness) => recorded.includes(harness) || explicit.includes(harness));
+  }
+  if (explicit !== undefined) return explicit;
+  if (isInteractive() && flags.yes !== true) return askHarnesses();
+  return ['claude'];
 }

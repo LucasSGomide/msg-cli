@@ -12,7 +12,8 @@ import { dirname, relative } from 'node:path';
 
 import { normalise } from './classify';
 import { classifyGitignore, buildGitignoreBlock, type GitignoreGroup } from './gitignore';
-import { mergeBranchGuardHooks } from './settingsJson';
+import type { Harness } from './harness';
+import type { MergeResult } from './hookConfig';
 
 /**
  * What a scaffolding run did, one entry per path it touched. `kept` is not a
@@ -71,6 +72,19 @@ export class Recorder {
     return true;
   }
 
+  /** Copy a rendered candidate while retaining its canonical source for parity checks. */
+  copyContentIfAbsent(
+    from: string,
+    to: string,
+    content: string,
+    options?: { readonly executable?: boolean },
+  ): boolean {
+    if (content === readFileSync(from, 'utf8')) return this.copyIfAbsent(from, to, options);
+    const written = this.writeIfAbsent(to, content);
+    if (written && options?.executable) chmodSync(to, 0o755);
+    return written;
+  }
+
   /**
    * Copy a path msg owns, replacing whatever is there.
    *
@@ -94,16 +108,27 @@ export class Recorder {
     this.record(to, existed ? 'updated' : 'created');
   }
 
+  /** Write deterministic rendered content to a path owned by msg. */
+  writeOwned(to: string, content: string, options?: { readonly executable?: boolean }): void {
+    const existed = existsSync(to);
+    if (existed && normalise(readFileSync(to, 'utf8')) === normalise(content)) {
+      this.record(to, 'unchanged');
+      return;
+    }
+    mkdirSync(dirname(to), { recursive: true });
+    writeFileSync(to, content, 'utf8');
+    if (options?.executable) chmodSync(to, 0o755);
+    this.record(to, existed ? 'updated' : 'created');
+  }
+
   /**
-   * Merge the branch-guard hook entries into `.claude/settings.json`,
+   * Merge the msg hook entries into the selected harness's configuration,
    * creating the file when absent. A structural merge, not a whole-file
    * write — see `mergeBranchGuardHooks` for what "changed" means here.
    */
-  mergeHooks(path: string): void {
+  mergeHooks(path: string, merge: (existing: string | null) => MergeResult): void {
     const existed = existsSync(path);
-    const { text, changed, skipped } = mergeBranchGuardHooks(
-      existed ? readFileSync(path, 'utf8') : null,
-    );
+    const { text, changed, skipped } = merge(existed ? readFileSync(path, 'utf8') : null);
     if (skipped || !changed) {
       this.record(path, 'kept');
       return;
@@ -115,8 +140,8 @@ export class Recorder {
 
   /**
    * Create the file, or append to it when it exists and does not already carry
-   * the marker. Used for the Makefile and CLAUDE.md, both of which a project is
-   * likely to own already — clobbering either would be hostile.
+   * the marker. Used for the Makefile and project-instructions file, both of
+   * which a project is likely to own already — clobbering either would be hostile.
    */
   createOrAppend(path: string, block: string, marker: string): void {
     if (!existsSync(path)) {
@@ -144,8 +169,9 @@ export class Recorder {
     path: string,
     groups: readonly GitignoreGroup[],
     allowed: readonly GitignoreGroup[],
+    harnesses: Harness | readonly Harness[] = 'claude',
   ): void {
-    const state = classifyGitignore(path, allowed);
+    const state = classifyGitignore(path, allowed, harnesses);
 
     if (state.outcome === 'kept-modified') {
       this.record(path, 'kept');
@@ -168,7 +194,7 @@ export class Recorder {
       return;
     }
 
-    const block = buildGitignoreBlock(groups);
+    const block = buildGitignoreBlock(groups, harnesses);
     if (state.outcome === 'absent' && withoutBlock === '') {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, block.replace(/^\n+/, ''), 'utf8');

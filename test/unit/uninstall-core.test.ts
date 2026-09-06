@@ -15,6 +15,7 @@ import {
 } from '../../src/core/description';
 import {
   manifestAreas,
+  readRecordedHarness,
   readRecordedVersion,
   renderManifest,
   versionMismatchMessage,
@@ -76,6 +77,23 @@ describe('readRecordedVersion', () => {
   it('says the templates are unknown when no version was recorded', () => {
     expect(versionMismatchMessage(null)).toContain('no msg_version');
     expect(versionMismatchMessage(null)).not.toContain('npx');
+  });
+});
+
+describe('readRecordedHarness', () => {
+  it('reads both supported harnesses from newly rendered manifests', () => {
+    expect(readRecordedHarness(renderManifest(['design'], VERSION, ['claude']))).toBe('claude');
+    expect(readRecordedHarness(renderManifest(['design'], VERSION, ['codex']))).toBe('codex');
+  });
+
+  it('treats a missing harness field as legacy Claude', () => {
+    expect(readRecordedHarness('msg_version: 9.9.9\nareas:\n  Design: docs/design.md\n')).toBe(
+      'claude',
+    );
+  });
+
+  it('rejects an unknown recorded harness', () => {
+    expect(() => readRecordedHarness('harness: cursor\n')).toThrow(/unknown harness 'cursor'/);
   });
 });
 

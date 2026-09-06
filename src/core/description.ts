@@ -2,18 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { AREAS, type AreaSlug } from './areas';
+import { getHarness, type Harness, type HarnessAdapter } from './harness';
 import { MANIFEST, REQUIREMENTS_FILE, renderManifest } from './manifest';
-import {
-  ACCEPTANCE_GATE_SRC,
-  BRANCH_GUARD_POST_SRC,
-  BRANCH_GUARD_PRE_SRC,
-  ENGINE_SRC,
-  RETIRE_BREAKDOWN_SRC,
-  SKILLS,
-  SKILLS_DIR,
-  readDocTemplate,
-  readProjectTemplate,
-} from './templates';
+import { ENGINE_SRC, SKILLS, SKILLS_DIR, readDocTemplate, readProjectTemplate } from './templates';
 
 /**
  * How an entry got onto disk, because removal treats each differently: a whole
@@ -49,15 +40,18 @@ export type ScaffoldEntry =
       readonly owned?: boolean;
     })
   | (BaseEntry & { readonly kind: 'appended'; readonly marker: string })
-  | { readonly path: string; readonly kind: 'settings-hook' };
-
-/** Where the branch-guard hook scripts land in a scaffolded project. */
-export const SETTINGS_FILE = '.claude/settings.json';
+  | {
+      readonly path: string;
+      readonly kind: 'settings-hook';
+      readonly adapter: HarnessAdapter;
+    };
 
 export interface DescriptionOptions {
   readonly areas: readonly AreaSlug[];
   readonly seed: boolean;
   readonly version: string;
+  readonly harness?: Harness;
+  readonly harnesses?: readonly Harness[];
 }
 
 export const FOLDER_READMES: ReadonlyArray<readonly [string, string]> = [
@@ -78,9 +72,14 @@ export const CLAUDE_MARKERS = ['<!-- msg-roadmap:start -->', '<!-- msg-roadmap:e
  */
 export function describeScaffold(options: DescriptionOptions): readonly ScaffoldEntry[] {
   const { areas, seed, version } = options;
+  const harnesses = options.harnesses ?? [options.harness ?? 'claude'];
   const entries: ScaffoldEntry[] = [];
 
-  entries.push({ path: MANIFEST, kind: 'file', candidates: [renderManifest(areas, version)] });
+  entries.push({
+    path: MANIFEST,
+    kind: 'file',
+    candidates: [renderManifest(areas, version, harnesses)],
+  });
 
   for (const [folder, template] of FOLDER_READMES) {
     entries.push({
@@ -114,44 +113,28 @@ export function describeScaffold(options: DescriptionOptions): readonly Scaffold
     candidates: [readProjectTemplate('Makefile.block')],
   });
 
-  entries.push({
-    path: 'CLAUDE.md',
-    kind: 'appended',
-    marker: CLAUDE_MARKERS[0],
-    candidates: [claudeBlock(areas)],
-  });
+  for (const harness of harnesses) {
+    const adapter = getHarness(harness);
+    entries.push({
+      path: adapter.instructionsPath,
+      kind: 'appended',
+      marker: CLAUDE_MARKERS[0],
+      candidates: [adapter.renderInstructions(areas)],
+    });
 
-  entries.push({
-    path: '.claude/hooks/branch-guard-pre.sh',
-    kind: 'copied',
-    source: BRANCH_GUARD_PRE_SRC,
-    executable: true,
-    candidates: [readFileSync(BRANCH_GUARD_PRE_SRC, 'utf8')],
-  });
-  entries.push({
-    path: '.claude/hooks/branch-guard-post.sh',
-    kind: 'copied',
-    source: BRANCH_GUARD_POST_SRC,
-    executable: true,
-    candidates: [readFileSync(BRANCH_GUARD_POST_SRC, 'utf8')],
-  });
-  entries.push({
-    path: '.claude/hooks/acceptance-criteria-gate.sh',
-    kind: 'copied',
-    source: ACCEPTANCE_GATE_SRC,
-    executable: true,
-    candidates: [readFileSync(ACCEPTANCE_GATE_SRC, 'utf8')],
-  });
-  entries.push({
-    path: '.claude/hooks/retire-breakdown-post.sh',
-    kind: 'copied',
-    source: RETIRE_BREAKDOWN_SRC,
-    executable: true,
-    candidates: [readFileSync(RETIRE_BREAKDOWN_SRC, 'utf8')],
-  });
-  entries.push({ path: SETTINGS_FILE, kind: 'settings-hook' });
+    for (const hook of adapter.hooks) {
+      entries.push({
+        path: `${adapter.hookDirectory}/${hook.filename}`,
+        kind: 'copied',
+        source: hook.source,
+        executable: true,
+        candidates: [adapter.renderText(readFileSync(hook.source, 'utf8'))],
+      });
+    }
+    entries.push({ path: adapter.hookConfigPath, kind: 'settings-hook', adapter });
 
-  for (const skill of SKILLS) entries.push(skillEntry(skill));
+    for (const skill of SKILLS) entries.push(skillEntry(skill, adapter));
+  }
 
   return entries;
 }
@@ -162,8 +145,15 @@ type CopiedEntry = Extract<ScaffoldEntry, { kind: 'copied' }>;
  * What `msg init --shape skills-only` writes: just the picked skills, none of
  * the roadmap scaffold above.
  */
-export function describeSkills(skills: readonly string[]): readonly CopiedEntry[] {
-  return skills.map(skillEntry);
+export function describeSkills(
+  skills: readonly string[],
+  selected: Harness | readonly Harness[] = 'claude',
+): readonly CopiedEntry[] {
+  const harnesses = Array.isArray(selected) ? selected : [selected];
+  return harnesses.flatMap((harness) => {
+    const adapter = getHarness(harness);
+    return skills.map((skill) => skillEntry(skill, adapter));
+  });
 }
 
 /**
@@ -175,16 +165,16 @@ export function describeSkills(skills: readonly string[]): readonly CopiedEntry[
  * nothing upstream can ever replace bytes it no longer recognises.
  *
  * A project that wants its own skill writes one under its own name; everything
- * under `.claude/skills/msg-*` tracks the installed msg-cli.
+ * under the selected harness's `msg-*` skill path tracks the installed msg-cli.
  */
-function skillEntry(skill: string): CopiedEntry {
+function skillEntry(skill: string, adapter: HarnessAdapter): CopiedEntry {
   const source = join(SKILLS_DIR, skill, 'SKILL.md');
   return {
-    path: `.claude/skills/${skill}/SKILL.md`,
+    path: `${adapter.skillDirectory}/${skill}/SKILL.md`,
     kind: 'copied',
     source,
     owned: true,
-    candidates: [readFileSync(source, 'utf8')],
+    candidates: [adapter.renderText(readFileSync(source, 'utf8'))],
   };
 }
 
@@ -211,8 +201,5 @@ function ruleDocBodies(slug: AreaSlug, seed: boolean): readonly [string, string]
 }
 
 export function claudeBlock(areas: readonly AreaSlug[]): string {
-  const table = areas
-    .map((slug) => `- **${AREAS[slug].label}** — \`${AREAS[slug].doc}\``)
-    .join('\n');
-  return readProjectTemplate('claude-block.md').replace('{{areas}}', table);
+  return getHarness('claude').renderInstructions(areas);
 }

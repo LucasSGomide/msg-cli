@@ -16,8 +16,15 @@ import {
   classifyGitignore,
   type GitignoreGroup,
 } from './gitignore';
-import { MANIFEST, manifestAreas, readRecordedVersion, versionMismatchMessage } from './manifest';
-import { stripBranchGuardHooks } from './settingsJson';
+import { getHarness, HARNESSES, type Harness } from './harness';
+import {
+  MANIFEST,
+  manifestAreas,
+  readRecordedHarnesses,
+  replaceRecordedHarnesses,
+  readRecordedVersion,
+  versionMismatchMessage,
+} from './manifest';
 import { PORTABLE_SKILLS } from './templates';
 
 export interface PlanEntry {
@@ -48,14 +55,42 @@ const PLANNING_FOLDERS = FOLDER_READMES.map(([folder]) => folder);
  * Pure: it reads the workspace and writes nothing, which is what makes
  * `--dry-run` the same code path as the real run.
  */
-export function buildPlan(root: string, running: string): PlanResult {
+export function buildPlan(
+  root: string,
+  running: string,
+  requestedHarnesses?: readonly Harness[],
+): PlanResult {
   const manifestPath = join(root, MANIFEST);
   // `--shape skills-only` writes no project.yml by design — there is nothing
   // to version-gate against, so a workspace missing one is a skills-only
   // scaffold (or nothing msg wrote at all) rather than an error on its own.
-  if (!existsSync(manifestPath)) return buildSkillsOnlyPlan(root);
+  if (!existsSync(manifestPath)) {
+    const detected = detectSkillsOnlyHarnesses(root);
+    if (requestedHarnesses === undefined && detected.length !== 1) {
+      const detail =
+        detected.length === 0 ? 'neither harness was found' : 'both harnesses are present';
+      return {
+        ok: false,
+        error: `error: no ${MANIFEST} and ${detail} — pass --harness <claude|codex> to select a skills-only install safely`,
+      };
+    }
+    return buildSkillsOnlyPlan(root, requestedHarnesses ?? [detected[0]!]);
+  }
 
   const manifest = readFileSync(manifestPath, 'utf8');
+  let installed: Harness[];
+  try {
+    installed = readRecordedHarnesses(manifest);
+  } catch (error) {
+    return { ok: false, error: `error: ${(error as Error).message}` };
+  }
+  const selected = requestedHarnesses ?? installed;
+  if (selected.length === 0 || selected.some((harness) => !installed.includes(harness))) {
+    return {
+      ok: false,
+      error: `error: --harness ${selected.join(',')} conflicts with ${MANIFEST}, which records ${installed.join(', ')}. Uninstall without the flag, or select only installed harnesses`,
+    };
+  }
   const { recorded, matches } = readRecordedVersion(manifest, running);
   if (!matches) return { ok: false, error: versionMismatchMessage(recorded) };
 
@@ -66,21 +101,42 @@ export function buildPlan(root: string, running: string): PlanResult {
   // is not recorded — the description carries both bodies for that reason.
   const areas = manifestAreas(manifest);
 
-  for (const entry of describeScaffold({ areas, seed: false, version: running })) {
-    entries.push(plan(root, entry));
+  const removingAllHarnesses = selected.length === installed.length;
+  for (const entry of describeScaffold({
+    areas,
+    seed: false,
+    version: running,
+    harnesses: selected,
+  })) {
+    if (entry.path === MANIFEST) {
+      if (removingAllHarnesses) entries.push(plan(root, entry));
+      else {
+        const remaining = installed.filter((harness) => !selected.includes(harness));
+        entries.push({
+          path: MANIFEST,
+          outcome: 'strip',
+          content: replaceRecordedHarnesses(manifest, remaining),
+          note: `keeps ${remaining.join(', ')}`,
+        });
+      }
+      continue;
+    }
+    if (removingAllHarnesses || isHarnessArtifact(entry, selected)) entries.push(plan(root, entry));
   }
-  entries.push(gitignoreEntry(root, GITIGNORE_GROUPS_FULL));
+  if (removingAllHarnesses) entries.push(gitignoreEntry(root, GITIGNORE_GROUPS_FULL, installed));
 
   // Directories `init` created. `scripts/` is deliberately absent: projects keep
   // their own scripts there, so it stays even when it ends up empty.
-  const candidates = new Set<string>([
-    'docs',
-    '.claude',
-    '.claude/skills',
-    '.claude/hooks',
-    ...PLANNING_FOLDERS,
-  ]);
-  const { folders, warnings } = pruneFolders(root, entries, candidates);
+  const candidates = new Set<string>(
+    removingAllHarnesses
+      ? [
+          'docs',
+          ...selected.flatMap((harness) => getHarness(harness).pruneDirectories),
+          ...PLANNING_FOLDERS,
+        ]
+      : selected.flatMap((harness) => getHarness(harness).pruneDirectories),
+  );
+  const { folders, warnings } = pruneFolders(root, entries, candidates, selected);
 
   return { ok: true, plan: { entries, folders, warnings } };
 }
@@ -99,8 +155,8 @@ export function buildPlan(root: string, running: string): PlanResult {
  * installed — nothing records which subset `--skills` picked, and an absent
  * file is a no-op here the same way it is for the full scaffold.
  */
-function buildSkillsOnlyPlan(root: string): PlanResult {
-  const entries = describeSkills(PORTABLE_SKILLS).map((entry): PlanEntry => ({
+function buildSkillsOnlyPlan(root: string, harnesses: readonly Harness[]): PlanResult {
+  const entries = describeSkills(PORTABLE_SKILLS, harnesses).map((entry): PlanEntry => ({
     path: entry.path,
     outcome: classifyFile(root, entry),
   }));
@@ -112,10 +168,26 @@ function buildSkillsOnlyPlan(root: string): PlanResult {
   // Added after the all-absent check above: a stray gitignore block with no
   // skill left to justify it must not make an otherwise-untouched workspace
   // look scaffolded.
-  entries.push(gitignoreEntry(root, GITIGNORE_GROUPS_SKILLS_ONLY));
+  entries.push(gitignoreEntry(root, GITIGNORE_GROUPS_SKILLS_ONLY, harnesses));
 
-  const { folders, warnings } = pruneFolders(root, entries, new Set(['.claude', '.claude/skills']));
+  const { folders, warnings } = pruneFolders(
+    root,
+    entries,
+    new Set(harnesses.flatMap((harness) => getHarness(harness).skillPruneDirectories)),
+    harnesses,
+  );
   return { ok: true, plan: { entries, folders, warnings } };
+}
+
+/** Harnesses with at least one msg-owned skill installed and no manifest to identify them. */
+export function detectSkillsOnlyHarnesses(root: string): Harness[] {
+  return HARNESSES.filter((harness) => {
+    const directory = join(root, getHarness(harness).skillDirectory);
+    if (!existsSync(directory) || !isDirectory(directory)) return false;
+    return readdirSync(directory).some(
+      (name) => name.startsWith('msg-') && existsSync(join(directory, name, 'SKILL.md')),
+    );
+  });
 }
 
 /**
@@ -128,14 +200,20 @@ function pruneFolders(
   root: string,
   entries: readonly PlanEntry[],
   candidates: Set<string>,
+  harnesses: readonly Harness[],
 ): { folders: string[]; warnings: string[] } {
   const removed = new Set(entries.filter((e) => e.outcome === 'remove').map((e) => e.path));
   const folders: string[] = [];
   const warnings: string[] = [];
 
   for (const entry of entries) {
-    if (entry.outcome === 'remove' && entry.path.startsWith('.claude/skills/')) {
-      candidates.add(dirOf(entry.path));
+    for (const harness of harnesses) {
+      if (
+        entry.outcome === 'remove' &&
+        entry.path.startsWith(`${getHarness(harness).skillDirectory}/`)
+      ) {
+        candidates.add(dirOf(entry.path));
+      }
     }
   }
 
@@ -165,11 +243,27 @@ function pruneFolders(
  * on a checklist answer nothing records, not on `areas`/`seed`/`version` — so
  * it is classified on its own against every group `allowed` could offer.
  */
-function gitignoreEntry(root: string, allowed: readonly GitignoreGroup[]): PlanEntry {
-  const { outcome, content } = classifyGitignore(join(root, GITIGNORE_PATH), allowed);
+function gitignoreEntry(
+  root: string,
+  allowed: readonly GitignoreGroup[],
+  harnesses: Harness | readonly Harness[],
+): PlanEntry {
+  const { outcome, content } = classifyGitignore(join(root, GITIGNORE_PATH), allowed, harnesses);
   return outcome === 'strip'
     ? { path: GITIGNORE_PATH, outcome, content }
     : { path: GITIGNORE_PATH, outcome };
+}
+
+function isHarnessArtifact(entry: ScaffoldEntry, harnesses: readonly Harness[]): boolean {
+  return harnesses.some((harness) => {
+    const adapter = getHarness(harness);
+    return (
+      entry.path === adapter.instructionsPath ||
+      entry.path === adapter.hookConfigPath ||
+      entry.path.startsWith(`${adapter.skillDirectory}/`) ||
+      entry.path.startsWith(`${adapter.hookDirectory}/`)
+    );
+  });
 }
 
 function plan(root: string, entry: ScaffoldEntry): PlanEntry {
@@ -192,7 +286,7 @@ function plan(root: string, entry: ScaffoldEntry): PlanEntry {
   if (entry.kind === 'settings-hook') {
     const full = join(root, entry.path);
     if (!existsSync(full)) return { path: entry.path, outcome: 'absent' };
-    const { outcome, content } = stripBranchGuardHooks(readFileSync(full, 'utf8'));
+    const { outcome, content } = entry.adapter.stripHookConfig(readFileSync(full, 'utf8'));
     return outcome === 'strip'
       ? { path: entry.path, outcome, content }
       : { path: entry.path, outcome };

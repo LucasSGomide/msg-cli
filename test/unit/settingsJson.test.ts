@@ -181,17 +181,14 @@ describe('stripBranchGuardHooks', () => {
     expect(stripBranchGuardHooks(content)).toEqual({ outcome: 'absent', content });
   });
 
-  it('reports absent when the file does not parse as JSON', () => {
-    expect(stripBranchGuardHooks('not json').outcome).toBe('absent');
+  it('reports invalid JSON as modified so uninstall names it and leaves it alone', () => {
+    expect(stripBranchGuardHooks('not json').outcome).toBe('kept-modified');
   });
 
   it('is a no-op the second time — nothing left to strip', () => {
     const installed = mergeBranchGuardHooks(null).text;
     const stripped = stripBranchGuardHooks(installed);
 
-    expect(stripBranchGuardHooks(stripped.content)).toEqual({
-      outcome: 'absent',
-      content: stripped.content,
-    });
+    expect(stripped).toEqual({ outcome: 'remove', content: '' });
   });
 });

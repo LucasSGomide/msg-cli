@@ -57,6 +57,13 @@ describe('buildGitignoreBlock', () => {
     }
   });
 
+  it('renders Codex-native skill and hook paths without Claude entries', () => {
+    const block = buildGitignoreBlock(['skills', 'hooks'], 'codex');
+    expect(block).toContain('.agents/skills/msg-*');
+    expect(block).toContain('.codex/hooks/branch-guard-pre.sh');
+    expect(block).not.toContain('.claude/');
+  });
+
   it('picking every group is byte-identical to "all"', () => {
     expect(buildGitignoreBlock(GITIGNORE_GROUPS_FULL)).toBe(
       buildGitignoreBlock(['makefile', 'hooks', 'skills', 'docs']),
@@ -142,5 +149,11 @@ describe('classifyGitignore', () => {
     const state = classifyGitignore(path, GITIGNORE_GROUPS_FULL);
     expect(state.outcome).toBe('kept-modified');
     expect(state.content).toBe(edited);
+  });
+
+  it('classifies a Codex block only against Codex paths', () => {
+    const path = tempFile(buildGitignoreBlock(['skills'], 'codex').replace(/^\n+/, ''));
+    expect(classifyGitignore(path, GITIGNORE_GROUPS_FULL, 'codex').outcome).toBe('remove');
+    expect(classifyGitignore(path, GITIGNORE_GROUPS_FULL, 'claude').outcome).toBe('kept-modified');
   });
 });
