@@ -106,6 +106,62 @@ describe('run', () => {
     expect(code).toBe(0);
     expect(readFileSync(join(root, '.gitignore'), 'utf8')).toContain('Makefile');
   });
+
+  it('passes --harness codex through to init', async () => {
+    const root = project();
+    const out = captureStdout();
+    const code = await run([
+      'init',
+      '--harness',
+      'codex',
+      '--shape',
+      'docs-only',
+      '--no-seed',
+      '--root',
+      root,
+    ]);
+    out.restore();
+
+    expect(code).toBe(0);
+    expect(readFileSync(join(root, 'project.yml'), 'utf8')).toContain('harnesses: [codex]');
+    expect(readFileSync(join(root, 'AGENTS.md'), 'utf8')).toContain('$msg-roadmap-plan-item');
+  });
+
+  it('reports an unknown harness as a usage error', async () => {
+    const root = project();
+    const err = captureStderr();
+    const code = await run(['init', '--harness', 'cursor', '--shape', 'docs-only', '--root', root]);
+    err.restore();
+
+    expect(code).toBe(2);
+    expect(err.chunks.join('')).toContain("unknown harness 'cursor'");
+  });
+
+  it('reports an uninstall harness conflict as a usage error without deleting', async () => {
+    const root = project();
+    const setupOut = captureStdout();
+    expect(
+      await run([
+        'init',
+        '--harness',
+        'codex',
+        '--shape',
+        'docs-only',
+        '--no-seed',
+        '--root',
+        root,
+      ]),
+    ).toBe(0);
+    setupOut.restore();
+
+    const err = captureStderr();
+    const code = await run(['uninstall', '--harness', 'claude', '--root', root, '-y']);
+    err.restore();
+
+    expect(code).toBe(2);
+    expect(err.chunks.join('')).toContain('conflicts with project.yml');
+    expect(readFileSync(join(root, 'project.yml'), 'utf8')).toContain('harnesses: [codex]');
+  });
 });
 
 describe('readVersion', () => {

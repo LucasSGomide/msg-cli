@@ -17,6 +17,7 @@ export type ExitCode = 0 | 1 | 2;
 
 const OPTIONS = {
   shape: { type: 'string' },
+  harness: { type: 'string' },
   areas: { type: 'string' },
   skills: { type: 'string' },
   auth: { type: 'boolean' },
@@ -70,6 +71,7 @@ export async function run(argv: string[]): Promise<ExitCode> {
         const result = await init(
           {
             shape: values.shape,
+            harness: values.harness,
             areas: values.areas,
             skills: values.skills,
             auth,
@@ -87,7 +89,12 @@ export async function run(argv: string[]): Promise<ExitCode> {
         return emit(check(resolveRoot(values.root)));
       case 'uninstall': {
         const result = await uninstall(
-          { root: values.root, dryRun: values['dry-run'], yes: values.yes },
+          {
+            root: values.root,
+            harness: values.harness,
+            dryRun: values['dry-run'],
+            yes: values.yes,
+          },
           readVersion(),
         );
         return emit(result);

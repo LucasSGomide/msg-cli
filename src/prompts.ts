@@ -1,6 +1,7 @@
 import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts';
 
 import { GITIGNORE_GROUPS, GITIGNORE_GROUP_ORDER, type GitignoreGroup } from './core/gitignore';
+import { HARNESSES, type Harness } from './core/harness';
 import type { Shape } from './core/shapes';
 import { PORTABLE_SKILLS, type PortableSkill } from './core/templates';
 
@@ -24,6 +25,35 @@ function unwrap<T>(value: T | symbol): T {
 
 export function isCancellation(error: unknown): boolean {
   return error instanceof Cancelled;
+}
+
+export async function askHarnesses(): Promise<Harness[]> {
+  return unwrap(
+    await multiselect({
+      message: 'Which harnesses should msg configure?',
+      initialValues: [...HARNESSES],
+      required: true,
+      options: [
+        { value: 'claude' as const, label: 'Claude Code' },
+        { value: 'codex' as const, label: 'Codex' },
+      ],
+    }),
+  );
+}
+
+/** Both installed harnesses start selected: selecting neither must be deliberate. */
+export async function askUninstallHarnesses(harnesses: readonly Harness[]): Promise<Harness[]> {
+  return unwrap(
+    await multiselect({
+      message: 'Which harnesses should msg uninstall?',
+      initialValues: [...harnesses],
+      required: false,
+      options: harnesses.map((harness) => ({
+        value: harness,
+        label: harness === 'claude' ? 'Claude Code' : 'Codex',
+      })),
+    }),
+  );
 }
 
 export async function askShape(detected: Shape): Promise<Shape> {

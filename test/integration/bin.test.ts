@@ -81,6 +81,32 @@ describe.runIf(existsSync(BIN))('the built bin, invoked through a symlink', () =
     expect(existsSync(join(root, 'docs'))).toBe(false);
   });
 
+  it('round-trips a Codex scaffold through init and uninstall', () => {
+    const root = temp();
+    mkdirSync(join(root, '.git'), { recursive: true });
+
+    const installed = linkedRun([
+      'init',
+      '--harness',
+      'codex',
+      '--shape',
+      'docs-only',
+      '--no-seed',
+      '--root',
+      root,
+    ]);
+    expect(installed.status, installed.stderr).toBe(0);
+    expect(existsSync(join(root, 'AGENTS.md'))).toBe(true);
+    expect(existsSync(join(root, '.agents/skills/msg-grill-me/SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, 'CLAUDE.md'))).toBe(false);
+
+    const removed = linkedRun(['uninstall', '--root', root, '-y']);
+    expect(removed.status, removed.stderr).toBe(0);
+    expect(existsSync(join(root, 'AGENTS.md'))).toBe(false);
+    expect(existsSync(join(root, '.agents/skills'))).toBe(false);
+    expect(existsSync(join(root, 'project.yml'))).toBe(false);
+  });
+
   it('leaves a scaffolded project passing its own check', () => {
     const root = temp();
     mkdirSync(join(root, '.git'), { recursive: true });

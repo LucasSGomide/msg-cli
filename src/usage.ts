@@ -8,6 +8,8 @@ Usage
   msg migrate-roadmap [options] (temporary) convert single-file roadmap items to folders
 
 init options
+  --harness <h>   claude, codex, or claude,codex (both are selected for a new
+                  interactive project; defaults to claude otherwise)
   --shape <s>     api | web | both | docs-only | skills-only
                   (detected from the repo if omitted)
   --areas <a,b>   explicit area slugs; overrides --shape
@@ -25,9 +27,9 @@ init options
   -y, --yes       accept every detected default, never prompt
 
   --shape skills-only skips areas, auth, seed, project.yml, the docs/ folders
-  and the CLAUDE.md block, and instead writes just the picked skills under
-  .claude/skills/ — for cherry-picking a portable skill without the rest of
-  the planning workflow.
+  and the project-instructions block, and instead writes just the picked skills
+  under the selected harness's skill directory — for cherry-picking a portable
+  skill without the rest of the planning workflow.
 
   The .gitignore step only ever runs inside a git repository, and only ever
   touches its own marker block — appended once, then rewritten to match
@@ -35,6 +37,8 @@ init options
   alone entirely.
 
 uninstall options
+  --harness <h>   claude, codex, or claude,codex (normally read from project.yml;
+                  choose installed harnesses when a skills-only install is ambiguous)
   --root <dir>    project root (default: cwd)
   --dry-run       print the plan and remove nothing
   -y, --yes       skip the confirmation prompt
@@ -55,9 +59,9 @@ migrate-roadmap options
 Nothing is ever overwritten. Re-running init fills only the gaps.
 
 A file you have modified is never removed — uninstall names it and leaves it.
-Only what init wrote, byte for byte, goes; the CLAUDE.md and Makefile blocks are
-cut out between their markers rather than deleted with the file. Uninstall runs
-only when the version in project.yml matches the CLI in hand, because that is
-the only set of templates the comparison is sound against; on a mismatch it
-names the version to run instead.
+Only what init wrote, byte for byte, goes; the CLAUDE.md/AGENTS.md and Makefile
+blocks are cut out between their markers rather than deleted with the file.
+Uninstall runs only when the version in project.yml matches the CLI in hand,
+because that is the only set of templates the comparison is sound against; on
+a mismatch it names the version to run instead.
 `;
